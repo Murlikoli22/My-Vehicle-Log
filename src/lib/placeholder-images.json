@@ -1,3 +1,34 @@
 {
-  "placeholderImages": []
+  "placeholderImages": [
+    {
+      "id": "hero-background",
+      "description": "A scenic road with a car driving on it at sunset",
+      "imageUrl": "https://images.unsplash.com/photo-1700692955799-c23fe7c85159?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw2fHxzY2VuaWMlMjByb2FkfGVufDB8fHx8MTc2ODIxMjA3N3ww&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "scenic road"
+    },
+    {
+      "id": "car-default",
+      "description": "A modern sedan parked in a city",
+      "imageUrl": "https://images.unsplash.com/photo-1767972885672-d469ccec0bd2?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwxfHxtb2Rlcm4lMjBzZWRhbnxlbnwwfHx8fDE3NjgyNDMyNzV8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "modern sedan"
+    },
+    {
+      "id": "motorcycle-default",
+      "description": "A cruiser motorcycle parked with a landscape background",
+      "imageUrl": "https://images.unsplash.com/photo-1649027949365-38ec7b09c786?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw1fHxjcnVpc2VyJTIwbW90b3JjeWNsZXxlbnwwfHx8fDE3NjgxMzczODZ8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "cruiser motorcycle"
+    },
+    {
+      "id": "truck-default",
+      "description": "A pickup truck on a dirt road",
+      "imageUrl": "https://images.unsplash.com/photo-1559416523-140ddc3d238c?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwzfHxwaWNrdXAlMjB0cnVja3xlbnwwfHx8fDE3NjgxNjA0NzV8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "pickup truck"
+    },
+    {
+      "id": "user-avatar-1",
+      "description": "Avatar of a user",
+      "imageUrl": "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw3fHxwZXJzb24lMjBwb3J0cmFpdHxlbnwwfHx8fDE3NjgyMzk0NDl8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "person portrait"
+    }
+  ]
 }
