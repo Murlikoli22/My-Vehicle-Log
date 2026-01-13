@@ -10,6 +10,7 @@
 
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
+import {googleAI} from '@genkit-ai/google-genai';
 
 const EstimateMaintenanceCostInputSchema = z.object({
   vehicleType: z.string().describe('The type of vehicle (e.g., car, truck, motorcycle).'),
@@ -20,6 +21,7 @@ const EstimateMaintenanceCostInputSchema = z.object({
   odometerReading: z.number().describe('The current odometer reading of the vehicle in miles or kilometers.'),
   serviceType: z.string().describe('The type of service to be performed (e.g., oil change, tire rotation, brake replacement).'),
   historicalData: z.string().optional().describe('Historical maintenance data of similar vehicles, if available.'),
+  apiKey: z.string().optional().describe("The user's Gemini API key."),
 });
 export type EstimateMaintenanceCostInput = z.infer<typeof EstimateMaintenanceCostInputSchema>;
 
@@ -63,8 +65,13 @@ const estimateMaintenanceCostFlow = ai.defineFlow(
     inputSchema: EstimateMaintenanceCostInputSchema,
     outputSchema: EstimateMaintenanceCostOutputSchema,
   },
-  async input => {
-    const {output} = await prompt(input);
+  async (input) => {
+    const customAI = genkit({
+      plugins: [googleAI({ apiKey: input.apiKey })],
+      model: 'googleai/gemini-2.5-flash',
+    });
+
+    const { output } = await customAI.run(prompt, input);
     return output!;
   }
 );
