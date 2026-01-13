@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { Loader2, Wand2, BarChart, CheckCircle } from 'lucide-react';
+import { Loader2, Wand2, BarChart, CheckCircle, KeyRound, Settings } from 'lucide-react';
 
 import { estimateMaintenanceCost, type EstimateMaintenanceCostOutput } from '@/ai/flows/estimate-maintenance-cost';
 import { Button } from '@/components/ui/button';
@@ -27,6 +27,8 @@ import {
 } from '@/components/ui/select';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Separator } from './ui/separator';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from './ui/collapsible';
+import { Alert, AlertDescription, AlertTitle } from './ui/alert';
 
 const formSchema = z.object({
   vehicleType: z.string().min(1, 'Vehicle type is required'),
@@ -44,6 +46,7 @@ export function CostEstimatorForm() {
   const [result, setResult] = useState<EstimateMaintenanceCostOutput | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [apiKey, setApiKey] = useState('');
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -66,7 +69,7 @@ export function CostEstimatorForm() {
       const estimation = await estimateMaintenanceCost(values);
       setResult(estimation);
     } catch (e) {
-      setError('Failed to get estimation. Please try again.');
+      setError('Failed to get estimation. Please check your API key and try again.');
       console.error(e);
     } finally {
       setIsLoading(false);
@@ -75,6 +78,41 @@ export function CostEstimatorForm() {
 
   return (
     <>
+      <Collapsible className="space-y-4">
+        <CollapsibleTrigger asChild>
+            <div className="flex items-center justify-between cursor-pointer">
+                <div className="flex items-center gap-2 text-sm font-semibold">
+                    <Settings className="h-5 w-5" />
+                    <span>API Configuration</span>
+                </div>
+                <Button variant="ghost" size="sm">
+                    <span className="text-sm">Toggle</span>
+                </Button>
+            </div>
+        </CollapsibleTrigger>
+        <CollapsibleContent>
+           <Alert>
+              <KeyRound className="h-4 w-4" />
+              <AlertTitle>Gemini API Key</AlertTitle>
+              <AlertDescription>
+                The AI cost estimator requires a Gemini API key. You can get one from Google AI Studio.
+                The key will be stored securely.
+              </AlertDescription>
+              <div className="mt-4 flex gap-2">
+                <Input 
+                    type="password"
+                    placeholder="Enter your Gemini API Key"
+                    value={apiKey}
+                    onChange={(e) => setApiKey(e.target.value)}
+                />
+                <Button>Save Key</Button>
+              </div>
+            </Alert>
+        </CollapsibleContent>
+      </Collapsible>
+      
+      <Separator className="my-8" />
+
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
           <div className="grid md:grid-cols-2 gap-6">
