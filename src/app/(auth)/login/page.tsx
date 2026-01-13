@@ -1,9 +1,21 @@
+'use client';
+
+import { useState } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { GoogleAuthProvider, signInWithPopup, UserCredential } from 'firebase/auth';
+import { doc, setDoc, getDoc } from 'firebase/firestore';
+import { Loader2 } from 'lucide-react';
+
+import { useAuth, useFirestore } from '@/firebase';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { AppLogo } from '@/components/app-logo';
+import { useToast } from '@/hooks/use-toast';
+import { initiateEmailSignIn } from '@/firebase/non-blocking-login';
+import { setDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 
 function GoogleIcon() {
   return (
@@ -29,8 +41,64 @@ function GoogleIcon() {
   );
 }
 
-
 export default function LoginPage() {
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const [isGoogleLoading, setGoogleLoading] = useState(false);
+  const auth = useAuth();
+  const firestore = useFirestore();
+  const router = useRouter();
+  const { toast } = useToast();
+
+  const handleGoogleSignIn = async () => {
+    setGoogleLoading(true);
+    const provider = new GoogleAuthProvider();
+    try {
+      const userCredential = await signInWithPopup(auth, provider);
+      const user = userCredential.user;
+
+      // Check if user document exists, if not create it
+      const userRef = doc(firestore, 'users', user.uid);
+      const userDoc = await getDoc(userRef);
+
+      if (!userDoc.exists()) {
+        setDocumentNonBlocking(
+          userRef,
+          {
+            id: user.uid,
+            name: user.displayName,
+            email: user.email,
+          },
+          { merge: true }
+        );
+      }
+
+      toast({
+        title: 'Signed In!',
+        description: 'You have been successfully signed in.',
+      });
+      router.push('/dashboard');
+    } catch (error: any) {
+      console.error('Google Sign-In Error:', error);
+      toast({
+        variant: 'destructive',
+        title: 'Sign In Failed',
+        description: 'Could not sign in with Google. Please try again.',
+      });
+    } finally {
+      setGoogleLoading(false);
+    }
+  };
+
+  const handleEmailLogin = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    setIsLoading(true);
+    // Non-blocking, will be handled by onAuthStateChanged
+    initiateEmailSignIn(auth, email, password);
+  };
+
+
   return (
     <Card className="w-full max-w-sm">
       <CardHeader className="text-center">
@@ -42,8 +110,12 @@ export default function LoginPage() {
       </CardHeader>
       <CardContent>
         <div className="grid gap-4">
-          <Button variant="outline">
-            <GoogleIcon />
+          <Button variant="outline" onClick={handleGoogleSignIn} disabled={isGoogleLoading}>
+            {isGoogleLoading ? (
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            ) : (
+              <GoogleIcon />
+            )}
             Sign in with Google
           </Button>
           <div className="relative">
@@ -54,17 +126,32 @@ export default function LoginPage() {
               <span className="bg-card px-2 text-muted-foreground">Or continue with</span>
             </div>
           </div>
-          <div className="grid gap-2">
-            <Label htmlFor="email">Email</Label>
-            <Input id="email" type="email" placeholder="m@example.com" required />
-          </div>
-          <div className="grid gap-2">
-            <Label htmlFor="password">Password</Label>
-            <Input id="password" type="password" required />
-          </div>
-          <Button type="submit" className="w-full bg-primary hover:bg-primary/90 text-primary-foreground">
-            Login
-          </Button>
+          <form onSubmit={handleEmailLogin} className="grid gap-4">
+            <div className="grid gap-2">
+              <Label htmlFor="email">Email</Label>
+              <Input
+                id="email"
+                type="email"
+                placeholder="m@example.com"
+                required
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+              />
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="password">Password</Label>
+              <Input
+                id="password"
+                type="password"
+                required
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+              />
+            </div>
+            <Button type="submit" className="w-full bg-primary hover:bg-primary/90 text-primary-foreground" disabled={isLoading}>
+              {isLoading ? <Loader2 className="animate-spin" /> : 'Login'}
+            </Button>
+          </form>
         </div>
         <div className="mt-4 text-center text-sm">
           Don&apos;t have an account?{' '}
