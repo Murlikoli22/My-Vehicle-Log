@@ -12,13 +12,14 @@ import {
   PlusCircle,
   MoreVertical,
   Download,
+  Trash2,
 } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
 
 import type { Vehicle, VehicleDocument, MaintenanceRecord } from '@/types';
 import { cn } from '@/lib/utils';
-import { useUser, useFirestore, addDocumentNonBlocking } from '@/firebase';
-import { collection } from 'firebase/firestore';
+import { useUser, useFirestore, addDocumentNonBlocking, deleteDocumentNonBlocking } from '@/firebase';
+import { collection, doc, writeBatch } from 'firebase/firestore';
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -52,7 +53,21 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
+
 import { AddVehicleForm } from './add-vehicle-form';
+import { AddDocumentForm } from './add-document-form';
+import { AddMaintenanceRecordForm } from './add-maintenance-record-form';
 import { placeholderImages } from '@/lib/placeholder-images.json';
 
 interface VehicleManagementProps {
@@ -68,6 +83,9 @@ export function VehicleManagement({
 }: VehicleManagementProps) {
   const [selectedVehicle, setSelectedVehicle] = useState<Vehicle | null>(initialVehicles[0] || null);
   const [isAddVehicleOpen, setAddVehicleOpen] = useState(false);
+  const [isAddDocOpen, setAddDocOpen] = useState(false);
+  const [isAddMaintOpen, setAddMaintOpen] = useState(false);
+
   const { user } = useUser();
   const firestore = useFirestore();
 
@@ -86,7 +104,7 @@ export function VehicleManagement({
     return new Date(dateString) < new Date();
   };
 
-  const handleAddVehicle = async (values: Omit<Vehicle, 'id' | 'imageUrl' | 'imageHint'>) => {
+  const handleAddVehicle = async (values: Omit<Vehicle, 'id' | 'imageUrl' | 'imageHint' | 'userId'>) => {
     if (!user) return;
     const carImage = placeholderImages.find(img => img.id === 'car-default');
     
@@ -102,6 +120,42 @@ export function VehicleManagement({
     setAddVehicleOpen(false);
   };
 
+  const handleAddDocument = async (values: Omit<VehicleDocument, 'id' | 'vehicleId'>) => {
+    if (!user || !selectedVehicle) return;
+    const newDocumentData = {
+      ...values,
+      vehicleId: selectedVehicle.id,
+      uploadDate: new Date().toISOString(),
+    };
+    const documentsCollection = collection(firestore, 'users', user.uid, 'vehicles', selectedVehicle.id, 'documents');
+    await addDocumentNonBlocking(documentsCollection, newDocumentData);
+    setAddDocOpen(false);
+  };
+
+  const handleAddMaintenance = async (values: Omit<MaintenanceRecord, 'id' | 'vehicleId'>) => {
+    if (!user || !selectedVehicle) return;
+    const newMaintenanceData = {
+      ...values,
+      vehicleId: selectedVehicle.id,
+    };
+    const maintenanceCollection = collection(firestore, 'users', user.uid, 'vehicles', selectedVehicle.id, 'maintenanceLogs');
+    await addDocumentNonBlocking(maintenanceCollection, newMaintenanceData);
+    setAddMaintOpen(false);
+  };
+
+  const handleRemoveVehicle = async (vehicleId: string) => {
+    if (!user) return;
+    
+    const vehicleRef = doc(firestore, 'users', user.uid, 'vehicles', vehicleId);
+    
+    // In a real app, you'd use a backend function to delete subcollections.
+    // For this example, we'll delete what we can from the client, though it's not exhaustive.
+    await deleteDocumentNonBlocking(vehicleRef);
+
+    if (selectedVehicle?.id === vehicleId) {
+        setSelectedVehicle(initialVehicles.length > 1 ? initialVehicles.filter(v => v.id !== vehicleId)[0] : null);
+    }
+  };
 
   return (
     <div className="grid md:grid-cols-[280px_1fr] lg:grid-cols-[320px_1fr] gap-8">
@@ -128,28 +182,61 @@ export function VehicleManagement({
         </div>
         <div className="flex flex-col gap-3">
           {initialVehicles.map((vehicle) => (
-            <button
-              key={vehicle.id}
-              onClick={() => setSelectedVehicle(vehicle)}
-              className={cn(
-                'flex items-center gap-4 rounded-lg border p-3 text-left transition-colors hover:bg-muted/50',
-                selectedVehicle?.id === vehicle.id && 'bg-muted'
-              )}
-            >
-              <div className="relative h-12 w-12 rounded-md overflow-hidden shrink-0">
-                <Image
-                    src={vehicle.imageUrl}
-                    alt={`${vehicle.brand} ${vehicle.model}`}
-                    fill
-                    className="object-cover"
-                    data-ai-hint={vehicle.imageHint}
-                />
-              </div>
-              <div className="flex-1 truncate">
-                <p className="font-medium truncate">{vehicle.brand} {vehicle.model}</p>
-                <p className="text-sm text-muted-foreground">{vehicle.registrationNumber}</p>
-              </div>
-            </button>
+            <div key={vehicle.id} className="group flex items-center gap-2 rounded-lg border pr-2 text-left transition-colors hover:bg-muted/50">
+              <button
+                onClick={() => setSelectedVehicle(vehicle)}
+                className={cn(
+                  'flex-1 flex items-center gap-4 rounded-lg p-3 text-left transition-colors',
+                  selectedVehicle?.id === vehicle.id && 'bg-muted'
+                )}
+              >
+                <div className="relative h-12 w-12 rounded-md overflow-hidden shrink-0">
+                  <Image
+                      src={vehicle.imageUrl}
+                      alt={`${vehicle.brand} ${vehicle.model}`}
+                      fill
+                      className="object-cover"
+                      data-ai-hint={vehicle.imageHint}
+                  />
+                </div>
+                <div className="flex-1 truncate">
+                  <p className="font-medium truncate">{vehicle.brand} {vehicle.model}</p>
+                  <p className="text-sm text-muted-foreground">{vehicle.registrationNumber}</p>
+                </div>
+              </button>
+              <AlertDialog>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" size="icon" className="shrink-0 h-8 w-8 opacity-50 group-hover:opacity-100">
+                      <MoreVertical className="h-4 w-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent>
+                    <AlertDialogTrigger asChild>
+                      <DropdownMenuItem className="text-destructive">
+                        <Trash2 className="mr-2 h-4 w-4" />
+                        Remove
+                      </DropdownMenuItem>
+                    </AlertDialogTrigger>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+                 <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      This action cannot be undone. This will permanently delete the vehicle
+                      and all associated documents and maintenance records.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogAction onClick={() => handleRemoveVehicle(vehicle.id)} className="bg-destructive hover:bg-destructive/90">
+                      Delete
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            </div>
           ))}
         </div>
       </div>
@@ -225,9 +312,22 @@ export function VehicleManagement({
                     <CardTitle>Documents</CardTitle>
                     <CardDescription>Manage your vehicle's important documents.</CardDescription>
                 </div>
-                <Button size="sm" className="ml-auto">
-                    <PlusCircle className="mr-2 h-4 w-4" /> Add Document
-                </Button>
+                 <Dialog open={isAddDocOpen} onOpenChange={setAddDocOpen}>
+                  <DialogTrigger asChild>
+                    <Button size="sm" className="ml-auto">
+                        <PlusCircle className="mr-2 h-4 w-4" /> Add Document
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent className="sm:max-w-[425px]">
+                    <DialogHeader>
+                      <DialogTitle>Add New Document</DialogTitle>
+                      <DialogDescription>
+                        Upload a new document for {selectedVehicle.brand} {selectedVehicle.model}.
+                      </DialogDescription>
+                    </DialogHeader>
+                    <AddDocumentForm onSubmit={handleAddDocument} />
+                  </DialogContent>
+                </Dialog>
               </CardHeader>
               <CardContent>
                 <Table>
@@ -242,8 +342,8 @@ export function VehicleManagement({
                   <TableBody>
                     {getVehicleDocuments(selectedVehicle.id).map(doc => (
                        <TableRow key={doc.id}>
-                         <TableCell className="font-medium flex items-center gap-2"><FileText className="h-4 w-4 text-muted-foreground"/> {doc.type}</TableCell>
-                         <TableCell>{doc.name}</TableCell>
+                         <TableCell className="font-medium flex items-center gap-2"><FileText className="h-4 w-4 text-muted-foreground"/> {doc.documentType}</TableCell>
+                         <TableCell>{doc.documentType}</TableCell>
                          <TableCell>
                             {doc.expiryDate ? (
                                 <Badge variant={isExpired(doc.expiryDate) ? "destructive" : "secondary"}>
@@ -273,9 +373,22 @@ export function VehicleManagement({
                     <CardTitle>Maintenance Log</CardTitle>
                     <CardDescription>A complete history of all services and repairs.</CardDescription>
                 </div>
-                <Button size="sm" className="ml-auto">
-                    <PlusCircle className="mr-2 h-4 w-4" /> Add Record
-                </Button>
+                 <Dialog open={isAddMaintOpen} onOpenChange={setAddMaintOpen}>
+                  <DialogTrigger asChild>
+                    <Button size="sm" className="ml-auto">
+                        <PlusCircle className="mr-2 h-4 w-4" /> Add Record
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent className="sm:max-w-[425px]">
+                    <DialogHeader>
+                      <DialogTitle>Add Maintenance Record</DialogTitle>
+                      <DialogDescription>
+                        Log a new service for {selectedVehicle.brand} {selectedVehicle.model}.
+                      </DialogDescription>
+                    </DialogHeader>
+                    <AddMaintenanceRecordForm onSubmit={handleAddMaintenance} />
+                  </DialogContent>
+                </Dialog>
               </CardHeader>
               <CardContent>
                  <Table>
@@ -294,7 +407,7 @@ export function VehicleManagement({
                          <TableCell>{format(parseISO(record.date), "dd MMM yyyy")}</TableCell>
                          <TableCell className="font-medium">{record.serviceType}</TableCell>
                          <TableCell>{record.odometerReading.toLocaleString()} km</TableCell>
-                         <TableCell>{record.mechanic}</TableCell>
+                         <TableCell>{record.mechanicDetails}</TableCell>
                          <TableCell className="text-right font-mono">{new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR' }).format(record.cost)}</TableCell>
                        </TableRow>
                     ))}
@@ -313,7 +426,7 @@ export function VehicleManagement({
         <Card className="flex flex-col items-center justify-center h-full text-center">
           <CardHeader>
             <CardTitle>No Vehicle Selected</CardTitle>
-            <CardDescription>Please select a vehicle from the list to see its details.</CardDescription>
+            <CardDescription>Please select a vehicle from the list to see its details, or add a new one to get started.</CardDescription>
           </CardHeader>
           <CardContent>
             <Car className="h-24 w-24 text-muted" />

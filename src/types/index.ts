@@ -15,8 +15,8 @@ export type Vehicle = {
 export type VehicleDocument = {
   id: string;
   vehicleId: string;
-  type: 'RC Book' | 'Insurance' | 'PUC' | 'Other';
-  name: string;
+  documentType: 'RC Book' | 'Insurance' | 'PUC' | 'Other';
+  uploadDate: string;
   expiryDate?: string;
   fileUrl?: string;
 };
@@ -27,7 +27,7 @@ export type MaintenanceRecord = {
   date: string;
   odometerReading: number;
   serviceType: string;
-  mechanic: string;
+  mechanicDetails: string;
   cost: number;
   notes?: string;
   billUrl?: string;

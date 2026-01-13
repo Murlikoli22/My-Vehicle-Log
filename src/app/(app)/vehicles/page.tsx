@@ -1,7 +1,7 @@
 'use client';
 
 import { useMemo } from 'react';
-import { collection, query, orderBy } from 'firebase/firestore';
+import { collection, query, orderBy, collectionGroup } from 'firebase/firestore';
 import { useUser, useFirestore, useCollection, useMemoFirebase } from '@/firebase';
 import { VehicleManagement } from '@/components/vehicle-management';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -19,26 +19,30 @@ export default function VehiclesPage() {
 
   const documentsQuery = useMemoFirebase(() => {
     if (!user) return null;
-    // This is a collection group query. Make sure you have the correct index in Firestore.
-    // The path is users/{userId}/vehicles/{vehicleId}/documents
-    // We are querying all documents for the user.
-    return query(collection(firestore, `users/${user.uid}/vehicles`));
+    return query(collectionGroup(firestore, 'documents'));
   }, [firestore, user]);
 
   const maintenanceQuery = useMemoFirebase(() => {
     if (!user) return null;
-    // This is a collection group query for maintenance records.
-    return query(collection(firestore, `users/${user.uid}/vehicles`));
+    return query(collectionGroup(firestore, 'maintenanceLogs'));
   }, [firestore, user]);
 
 
   const { data: vehicles, isLoading: vehiclesLoading } = useCollection<Vehicle>(vehiclesQuery);
-  const { data: documents, isLoading: documentsLoading } = useCollection<VehicleDocument>(
-    useMemoFirebase(() => (vehicles ? collection(firestore, `users/${user!.uid}/vehicles/${vehicles[0]?.id}/documents`) : null), [firestore, user, vehicles])
-  );
-  const { data: maintenanceRecords, isLoading: maintenanceLoading } = useCollection<MaintenanceRecord>(
-     useMemoFirebase(() => (vehicles ? collection(firestore, `users/${user!.uid}/vehicles/${vehicles[0]?.id}/maintenanceLogs`) : null), [firestore, user, vehicles])
-  );
+  const { data: documentsData, isLoading: documentsLoading } = useCollection<VehicleDocument>(documentsQuery);
+  const { data: maintenanceData, isLoading: maintenanceLoading } = useCollection<MaintenanceRecord>(maintenanceQuery);
+
+  const documents = useMemo(() => {
+    if (!documentsData || !vehicles) return [];
+    const vehicleIds = new Set(vehicles.map(v => v.id));
+    return documentsData.filter(doc => vehicleIds.has(doc.vehicleId));
+  }, [documentsData, vehicles]);
+
+  const maintenanceRecords = useMemo(() => {
+    if (!maintenanceData || !vehicles) return [];
+    const vehicleIds = new Set(vehicles.map(v => v.id));
+    return maintenanceData.filter(rec => vehicleIds.has(rec.vehicleId));
+  }, [maintenanceData, vehicles]);
 
 
   const isLoading = isUserLoading || vehiclesLoading || documentsLoading || maintenanceLoading;

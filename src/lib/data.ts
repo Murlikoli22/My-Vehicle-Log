@@ -8,6 +8,7 @@ const truckImage = placeholderImages.find(img => img.id === 'truck-default');
 export const vehicles: Vehicle[] = [
   {
     id: '1',
+    userId: 'anonymous',
     registrationNumber: 'MH12AB1234',
     type: 'Car',
     brand: 'Toyota',
@@ -20,6 +21,7 @@ export const vehicles: Vehicle[] = [
   },
   {
     id: '2',
+    userId: 'anonymous',
     registrationNumber: 'KA01CD5678',
     type: 'Motorcycle',
     brand: 'Honda',
@@ -32,6 +34,7 @@ export const vehicles: Vehicle[] = [
   },
   {
     id: '3',
+    userId: 'anonymous',
     registrationNumber: 'DL05EF9012',
     type: 'Truck',
     brand: 'Ford',
@@ -45,17 +48,17 @@ export const vehicles: Vehicle[] = [
 ];
 
 export const documents: VehicleDocument[] = [
-  { id: 'doc1', vehicleId: '1', type: 'Insurance', name: 'Comprehensive Insurance', expiryDate: '2025-08-15' },
-  { id: 'doc2', vehicleId: '1', type: 'PUC', name: 'Pollution Under Control', expiryDate: '2024-11-20' },
-  { id: 'doc3', vehicleId: '1', type: 'RC Book', name: 'Registration Certificate' },
-  { id: 'doc4', vehicleId: '2', type: 'Insurance', name: 'Third-Party Insurance', expiryDate: '2025-01-30' },
-  { id: 'doc5', vehicleId: '2', type: 'PUC', name: 'Pollution Under Control', expiryDate: '2024-09-01' },
+  { id: 'doc1', vehicleId: '1', documentType: 'Insurance', uploadDate: '2023-08-16T00:00:00.000Z', expiryDate: '2025-08-15' },
+  { id: 'doc2', vehicleId: '1', documentType: 'PUC', uploadDate: '2023-11-21T00:00:00.000Z', expiryDate: '2024-11-20' },
+  { id: 'doc3', vehicleId: '1', documentType: 'RC Book', uploadDate: '2021-01-01T00:00:00.000Z' },
+  { id: 'doc4', vehicleId: '2', documentType: 'Insurance', uploadDate: '2024-01-31T00:00:00.000Z', expiryDate: '2025-01-30' },
+  { id: 'doc5', vehicleId: '2', documentType: 'PUC', uploadDate: '2023-09-02T00:00:00.000Z', expiryDate: '2024-09-01' },
 ];
 
 export const maintenanceRecords: MaintenanceRecord[] = [
-  { id: 'maint1', vehicleId: '1', date: '2024-05-10', odometerReading: 22000, serviceType: 'Regular Service', mechanic: 'City Auto Works', cost: 4500, notes: 'Oil change, air filter clean, general checkup.' },
-  { id: 'maint2', vehicleId: '1', date: '2023-11-02', odometerReading: 15000, serviceType: 'Tire Rotation', mechanic: 'Quick-Fit Tires', cost: 800 },
-  { id: 'maint3', vehicleId: '2', date: '2024-03-20', odometerReading: 6500, serviceType: 'First Service', mechanic: 'Honda Authorized Center', cost: 1200, notes: 'Oil change and chain lubrication.' },
+  { id: 'maint1', vehicleId: '1', date: '2024-05-10', odometerReading: 22000, serviceType: 'Regular Service', mechanicDetails: 'City Auto Works', cost: 4500, notes: 'Oil change, air filter clean, general checkup.' },
+  { id: 'maint2', vehicleId: '1', date: '2023-11-02', odometerReading: 15000, serviceType: 'Tire Rotation', mechanicDetails: 'Quick-Fit Tires', cost: 800 },
+  { id: 'maint3', vehicleId: '2', date: '2024-03-20', odometerReading: 6500, serviceType: 'First Service', mechanicDetails: 'Honda Authorized Center', cost: 1200, notes: 'Oil change and chain lubrication.' },
 ];
 
 export const reminders: Reminder[] = [
