@@ -13,8 +13,10 @@ import {
   User,
   Wrench,
 } from 'lucide-react';
+import { signOut } from 'firebase/auth';
 
 import { cn } from '@/lib/utils';
+import { useAuth } from '@/firebase';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -43,7 +45,13 @@ const navItems = [
 
 export function Header() {
   const pathname = usePathname();
+  const auth = useAuth();
   const avatarImage = placeholderImages.find(img => img.id === 'user-avatar-1');
+
+  const handleLogout = async () => {
+    await signOut(auth);
+    window.location.href = '/login';
+  };
 
   const navLinks = (
     <>
@@ -116,7 +124,7 @@ export function Header() {
               <span>Settings</span>
             </DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem>
+            <DropdownMenuItem onClick={handleLogout}>
               <LogOut className="mr-2 h-4 w-4" />
               <span>Logout</span>
             </DropdownMenuItem>
