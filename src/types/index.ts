@@ -1,5 +1,6 @@
 export type Vehicle = {
   id: string;
+  userId: string;
   registrationNumber: string;
   type: 'Car' | 'Motorcycle' | 'Truck' | 'Other';
   brand: string;

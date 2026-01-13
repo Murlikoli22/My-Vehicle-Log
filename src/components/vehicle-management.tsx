@@ -17,6 +17,8 @@ import { format, parseISO } from 'date-fns';
 
 import type { Vehicle, VehicleDocument, MaintenanceRecord } from '@/types';
 import { cn } from '@/lib/utils';
+import { useUser, useFirestore, addDocumentNonBlocking } from '@/firebase';
+import { collection } from 'firebase/firestore';
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -42,6 +44,16 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog';
+import { AddVehicleForm } from './add-vehicle-form';
+import { placeholderImages } from '@/lib/placeholder-images.json';
 
 interface VehicleManagementProps {
   initialVehicles: Vehicle[];
@@ -55,6 +67,9 @@ export function VehicleManagement({
   initialMaintenanceRecords,
 }: VehicleManagementProps) {
   const [selectedVehicle, setSelectedVehicle] = useState<Vehicle | null>(initialVehicles[0] || null);
+  const [isAddVehicleOpen, setAddVehicleOpen] = useState(false);
+  const { user } = useUser();
+  const firestore = useFirestore();
 
   const getVehicleDocuments = (vehicleId: string) =>
     initialDocuments.filter((doc) => doc.vehicleId === vehicleId);
@@ -71,16 +86,45 @@ export function VehicleManagement({
     return new Date(dateString) < new Date();
   };
 
+  const handleAddVehicle = async (values: Omit<Vehicle, 'id' | 'imageUrl' | 'imageHint'>) => {
+    if (!user) return;
+    const carImage = placeholderImages.find(img => img.id === 'car-default');
+    
+    const newVehicleData = {
+      ...values,
+      userId: user.uid,
+      imageUrl: carImage?.imageUrl ?? 'https://picsum.photos/seed/2/600/400',
+      imageHint: carImage?.imageHint ?? 'modern sedan'
+    };
+
+    const vehiclesCollection = collection(firestore, 'users', user.uid, 'vehicles');
+    await addDocumentNonBlocking(vehiclesCollection, newVehicleData);
+    setAddVehicleOpen(false);
+  };
+
 
   return (
     <div className="grid md:grid-cols-[280px_1fr] lg:grid-cols-[320px_1fr] gap-8">
       <div className="flex flex-col gap-4">
         <div className="flex items-center justify-between">
             <h2 className="text-xl font-bold">My Vehicles</h2>
-            <Button size="sm">
-                <PlusCircle className="mr-2 h-4 w-4" />
-                Add Vehicle
-            </Button>
+            <Dialog open={isAddVehicleOpen} onOpenChange={setAddVehicleOpen}>
+              <DialogTrigger asChild>
+                <Button size="sm">
+                    <PlusCircle className="mr-2 h-4 w-4" />
+                    Add Vehicle
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="sm:max-w-[425px]">
+                <DialogHeader>
+                  <DialogTitle>Add New Vehicle</DialogTitle>
+                  <DialogDescription>
+                    Enter the details of your new vehicle.
+                  </DialogDescription>
+                </DialogHeader>
+                <AddVehicleForm onSubmit={handleAddVehicle} />
+              </DialogContent>
+            </Dialog>
         </div>
         <div className="flex flex-col gap-3">
           {initialVehicles.map((vehicle) => (
