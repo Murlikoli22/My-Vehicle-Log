@@ -72,6 +72,11 @@ export default function LoginPage() {
             Sign up
           </Link>
         </div>
+        <div className="mt-2 text-center text-sm">
+          <Button variant="link" asChild className="text-muted-foreground">
+            <Link href="/dashboard">Continue without logging in</Link>
+          </Button>
+        </div>
       </CardContent>
     </Card>
   );
