@@ -1,0 +1,330 @@
+{
+  "entities": {
+    "Vehicle": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Vehicle",
+      "type": "object",
+      "description": "Represents a vehicle owned by a user.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the vehicle."
+        },
+        "userId": {
+          "type": "string",
+          "description": "Reference to the User who owns this vehicle. (Relationship: User 1:N Vehicle)"
+        },
+        "registrationNumber": {
+          "type": "string",
+          "description": "The vehicle's registration number."
+        },
+        "type": {
+          "type": "string",
+          "description": "The type of vehicle (e.g., car, truck, motorcycle)."
+        },
+        "brand": {
+          "type": "string",
+          "description": "The vehicle's brand (e.g., Toyota, Ford)."
+        },
+        "model": {
+          "type": "string",
+          "description": "The vehicle's model (e.g., Camry, F-150)."
+        },
+        "year": {
+          "type": "number",
+          "description": "The vehicle's manufacturing year."
+        },
+        "fuelType": {
+          "type": "string",
+          "description": "The fuel type used by the vehicle (e.g., gasoline, diesel, electric)."
+        },
+        "odometerReading": {
+          "type": "number",
+          "description": "The current odometer reading of the vehicle."
+        }
+      },
+      "required": [
+        "id",
+        "userId",
+        "registrationNumber",
+        "type",
+        "brand",
+        "model",
+        "year",
+        "fuelType",
+        "odometerReading"
+      ]
+    },
+    "Document": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Document",
+      "type": "object",
+      "description": "Represents a document associated with a vehicle.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the document."
+        },
+        "vehicleId": {
+          "type": "string",
+          "description": "Reference to the Vehicle this document belongs to. (Relationship: Vehicle 1:N Document)"
+        },
+        "documentType": {
+          "type": "string",
+          "description": "The type of document (e.g., RC Book, Insurance, PUC)."
+        },
+        "uploadDate": {
+          "type": "string",
+          "description": "The date the document was uploaded.",
+          "format": "date-time"
+        },
+        "expiryDate": {
+          "type": "string",
+          "description": "The expiry date of the document.",
+          "format": "date-time"
+        },
+        "fileUrl": {
+          "type": "string",
+          "description": "URL of the uploaded document file.",
+          "format": "uri"
+        }
+      },
+      "required": [
+        "id",
+        "vehicleId",
+        "documentType",
+        "uploadDate",
+        "expiryDate",
+        "fileUrl"
+      ]
+    },
+    "MaintenanceLog": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "MaintenanceLog",
+      "type": "object",
+      "description": "Represents a maintenance log entry for a vehicle.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the maintenance log entry."
+        },
+        "vehicleId": {
+          "type": "string",
+          "description": "Reference to the Vehicle this maintenance log belongs to. (Relationship: Vehicle 1:N MaintenanceLog)"
+        },
+        "date": {
+          "type": "string",
+          "description": "The date of the maintenance service.",
+          "format": "date-time"
+        },
+        "odometerReading": {
+          "type": "number",
+          "description": "The odometer reading at the time of service."
+        },
+        "serviceType": {
+          "type": "string",
+          "description": "The type of service performed (e.g., oil change, tire rotation)."
+        },
+        "mechanicDetails": {
+          "type": "string",
+          "description": "Details about the mechanic or service center."
+        },
+        "cost": {
+          "type": "number",
+          "description": "The cost of the maintenance service."
+        },
+        "billUrl": {
+          "type": "string",
+          "description": "URL of the uploaded bill for the service.",
+          "format": "uri"
+        }
+      },
+      "required": [
+        "id",
+        "vehicleId",
+        "date",
+        "odometerReading",
+        "serviceType",
+        "mechanicDetails",
+        "cost",
+        "billUrl"
+      ]
+    },
+    "EmergencyContact": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "EmergencyContact",
+      "type": "object",
+      "description": "Represents an emergency contact for a user.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the emergency contact."
+        },
+        "userId": {
+          "type": "string",
+          "description": "Reference to the User who this contact belongs to. (Relationship: User 1:N EmergencyContact)"
+        },
+        "name": {
+          "type": "string",
+          "description": "The name of the emergency contact."
+        },
+        "phoneNumber": {
+          "type": "string",
+          "description": "The phone number of the emergency contact."
+        },
+        "relationship": {
+          "type": "string",
+          "description": "The relationship to the user (e.g., mother, friend)."
+        }
+      },
+      "required": [
+        "id",
+        "userId",
+        "name",
+        "phoneNumber",
+        "relationship"
+      ]
+    },
+    "User": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "User",
+      "type": "object",
+      "description": "Represents a user of the application.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the user."
+        },
+        "email": {
+          "type": "string",
+          "description": "The user's email address.",
+          "format": "email"
+        },
+        "name": {
+          "type": "string",
+          "description": "The user's display name."
+        }
+      },
+      "required": [
+        "id",
+        "email",
+        "name"
+      ]
+    }
+  },
+  "auth": {
+    "providers": [
+      "password",
+      "anonymous"
+    ]
+  },
+  "firestore": {
+    "structure": [
+      {
+        "path": "/users/{userId}",
+        "definition": {
+          "entityName": "User",
+          "schema": {
+            "$ref": "#/backend/entities/User"
+          },
+          "description": "Stores user profile information. The document ID is the user's UID.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The Firebase Auth UID of the user."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{userId}/vehicles/{vehicleId}",
+        "definition": {
+          "entityName": "Vehicle",
+          "schema": {
+            "$ref": "#/backend/entities/Vehicle"
+          },
+          "description": "Stores vehicle information for a specific user.  Ownership is determined by the userId in the path.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The Firebase Auth UID of the user who owns the vehicle."
+            },
+            {
+              "name": "vehicleId",
+              "description": "The unique ID of the vehicle."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{userId}/vehicles/{vehicleId}/documents/{documentId}",
+        "definition": {
+          "entityName": "Document",
+          "schema": {
+            "$ref": "#/backend/entities/Document"
+          },
+          "description": "Stores documents related to a specific vehicle owned by a user. Ownership is determined by the userId and vehicleId in the path.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The Firebase Auth UID of the user who owns the vehicle."
+            },
+            {
+              "name": "vehicleId",
+              "description": "The unique ID of the vehicle to which the document belongs."
+            },
+            {
+              "name": "documentId",
+              "description": "The unique ID of the document."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{userId}/vehicles/{vehicleId}/maintenanceLogs/{maintenanceLogId}",
+        "definition": {
+          "entityName": "MaintenanceLog",
+          "schema": {
+            "$ref": "#/backend/entities/MaintenanceLog"
+          },
+          "description": "Stores maintenance logs for a specific vehicle owned by a user. Ownership is determined by the userId and vehicleId in the path.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The Firebase Auth UID of the user who owns the vehicle."
+            },
+            {
+              "name": "vehicleId",
+              "description": "The unique ID of the vehicle to which the maintenance log belongs."
+            },
+            {
+              "name": "maintenanceLogId",
+              "description": "The unique ID of the maintenance log."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{userId}/emergencyContacts/{emergencyContactId}",
+        "definition": {
+          "entityName": "EmergencyContact",
+          "schema": {
+            "$ref": "#/backend/entities/EmergencyContact"
+          },
+          "description": "Stores emergency contacts for a specific user. Ownership is determined by the userId in the path.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The Firebase Auth UID of the user who owns the emergency contact."
+            },
+            {
+              "name": "emergencyContactId",
+              "description": "The unique ID of the emergency contact."
+            }
+          ]
+        }
+      }
+    ],
+    "reasoning": "The Firestore structure is designed to ensure authorization independence, clarity, and scalability, following the principles outlined in the prompt. It leverages path-based ownership for user-specific data and denormalization to avoid complex security rules with `get()` calls. Here's a breakdown:\n\n*   **/users/{userId}**: Stores user profiles. Authorization is based on the `request.auth.uid` matching the `{userId}`.\n*   **/users/{userId}/vehicles/{vehicleId}**: Stores vehicle data owned by a specific user. The `userId` is embedded in the path, making ownership clear and enabling simple security rules.  This follows the User 1:N Vehicle relationship. The vehicle documents do not need to duplicate the userId because it can be derived from the collection path.\n*   **/users/{userId}/vehicles/{vehicleId}/documents/{documentId}**: Stores documents related to a specific vehicle. The path includes both `userId` and `vehicleId`, ensuring that only the owner of the vehicle can access these documents. This enforces the Vehicle 1:N Document relationship and continues the hierarchy as requested.\n*   **/users/{userId}/vehicles/{vehicleId}/maintenanceLogs/{maintenanceLogId}**: Stores maintenance logs for a specific vehicle, following the same ownership pattern as documents. The full path ensures proper authorization and data segregation. This structure facilitates the Vehicle 1:N MaintenanceLog relationship.\n*   **/users/{userId}/emergencyContacts/{emergencyContactId}**: Stores emergency contacts for a specific user. The `userId` in the path clearly defines ownership.\n\n**Authorization Independence (CRITICAL):** The structure avoids `get()` calls in security rules by embedding ownership information within the document paths. This enables atomic operations and simplifies security rule logic.  For example, to create a new document for a vehicle, the rule only needs to check that `request.auth.uid == userId` from the path.  It does not need to `get()` the vehicle document to verify ownership.\n\n**QAPs (Rules are not Filters):**\nThe path-based ownership (`/users/{userId}/vehicles/{vehicleId}`) allows for secure listing of vehicles owned by a specific user. The security rule can simply check that `request.auth.uid == userId` to allow the `list` operation.  Similar logic applies to listing documents and maintenance logs for a given vehicle.\n\n**DBAC:** Roles are managed solely through `request.auth.uid`, avoiding custom claims.\n\n**Invariants:** The structure enforces ownership invariants by using hierarchical paths (`/users/{userId}/vehicles/{vehicleId}/...`). Timestamps can be enforced in security rules using `request.time`. Denormalized data (if needed in the future) should follow the denormalization strategy of copying authorization attributes into subcollections.\n\n**Data Clarity and Predictability:** The structure uses explicit state modeling (though the entities do not include status fields, they could be added in the future).  It also employs predictable schema with static keys. Naming conventions are consistent (e.g., `userId`, `vehicleId`)."
+  }
+}
