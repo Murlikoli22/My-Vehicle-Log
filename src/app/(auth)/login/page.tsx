@@ -7,7 +7,7 @@ import { GoogleAuthProvider, signInWithPopup, UserCredential } from 'firebase/au
 import { doc, setDoc, getDoc } from 'firebase/firestore';
 import { Loader2 } from 'lucide-react';
 
-import { useAuth, useFirestore } from '@/firebase';
+import { useAuth, useFirestore, useUser } from '@/firebase';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -50,6 +50,12 @@ export default function LoginPage() {
   const firestore = useFirestore();
   const router = useRouter();
   const { toast } = useToast();
+  const { user } = useUser();
+
+  if (user) {
+    router.push('/dashboard');
+    return null;
+  }
 
   const handleGoogleSignIn = async () => {
     setGoogleLoading(true);
