@@ -1,7 +1,7 @@
 'use client';
 
-import { useMemo } from 'react';
-import { collection, query, orderBy, collectionGroup } from 'firebase/firestore';
+import { useMemo, useEffect, useState } from 'react';
+import { collection, query, orderBy, where, getDocs, onSnapshot } from 'firebase/firestore';
 import { useUser, useFirestore, useCollection, useMemoFirebase } from '@/firebase';
 import { VehicleManagement } from '@/components/vehicle-management';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -12,40 +12,61 @@ export default function VehiclesPage() {
   const { user, isUserLoading } = useUser();
   const firestore = useFirestore();
 
+  const [documents, setDocuments] = useState<VehicleDocument[]>([]);
+  const [maintenanceRecords, setMaintenanceRecords] = useState<MaintenanceRecord[]>([]);
+  const [docsLoading, setDocsLoading] = useState(true);
+  const [maintLoading, setMaintLoading] = useState(true);
+
   const vehiclesQuery = useMemoFirebase(() => {
     if (!user) return null;
     return query(collection(firestore, 'users', user.uid, 'vehicles'), orderBy('brand'));
   }, [firestore, user]);
 
-  const documentsQuery = useMemoFirebase(() => {
-    if (!user) return null;
-    return query(collectionGroup(firestore, 'documents'));
-  }, [firestore, user]);
-
-  const maintenanceQuery = useMemoFirebase(() => {
-    if (!user) return null;
-    return query(collectionGroup(firestore, 'maintenanceLogs'));
-  }, [firestore, user]);
-
-
   const { data: vehicles, isLoading: vehiclesLoading } = useCollection<Vehicle>(vehiclesQuery);
-  const { data: documentsData, isLoading: documentsLoading } = useCollection<VehicleDocument>(documentsQuery);
-  const { data: maintenanceData, isLoading: maintenanceLoading } = useCollection<MaintenanceRecord>(maintenanceQuery);
 
-  const documents = useMemo(() => {
-    if (!documentsData || !vehicles) return [];
-    const vehicleIds = new Set(vehicles.map(v => v.id));
-    return documentsData.filter(doc => vehicleIds.has(doc.vehicleId));
-  }, [documentsData, vehicles]);
+  useEffect(() => {
+    if (!vehicles || !user) return;
 
-  const maintenanceRecords = useMemo(() => {
-    if (!maintenanceData || !vehicles) return [];
-    const vehicleIds = new Set(vehicles.map(v => v.id));
-    return maintenanceData.filter(rec => vehicleIds.has(rec.vehicleId));
-  }, [maintenanceData, vehicles]);
+    setDocsLoading(true);
+    setMaintLoading(true);
 
+    const unsubscribes: (() => void)[] = [];
 
-  const isLoading = isUserLoading || vehiclesLoading || documentsLoading || maintenanceLoading;
+    const fetchSubCollections = async () => {
+      let allDocuments: VehicleDocument[] = [];
+      let allMaintenance: MaintenanceRecord[] = [];
+
+      for (const vehicle of vehicles) {
+        // Documents
+        const docsRef = collection(firestore, 'users', user.uid, 'vehicles', vehicle.id, 'documents');
+        const docsUnsub = onSnapshot(docsRef, (snapshot) => {
+          const newDocs = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as VehicleDocument));
+          allDocuments = [...allDocuments.filter(d => d.vehicleId !== vehicle.id), ...newDocs];
+          setDocuments([...allDocuments]);
+        });
+        unsubscribes.push(docsUnsub);
+
+        // Maintenance
+        const maintRef = collection(firestore, 'users', user.uid, 'vehicles', vehicle.id, 'maintenanceLogs');
+        const maintUnsub = onSnapshot(maintRef, (snapshot) => {
+          const newMaint = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as MaintenanceRecord));
+          allMaintenance = [...allMaintenance.filter(m => m.vehicleId !== vehicle.id), ...newMaint];
+          setMaintenanceRecords([...allMaintenance]);
+        });
+        unsubscribes.push(maintUnsub);
+      }
+      setDocsLoading(false);
+      setMaintLoading(false);
+    };
+
+    fetchSubCollections();
+
+    return () => {
+      unsubscribes.forEach(unsub => unsub());
+    };
+  }, [vehicles, user, firestore]);
+
+  const isLoading = isUserLoading || vehiclesLoading || docsLoading || maintLoading;
   
   if (isLoading) {
     return (
