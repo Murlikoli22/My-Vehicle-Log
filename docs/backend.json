@@ -150,50 +150,15 @@
         "billUrl"
       ]
     },
-    "EmergencyContact": {
-      "$schema": "http://json-schema.org/draft-07/schema#",
-      "title": "EmergencyContact",
-      "type": "object",
-      "description": "Represents an emergency contact for a user.",
-      "properties": {
-        "id": {
-          "type": "string",
-          "description": "Unique identifier for the emergency contact."
-        },
-        "userId": {
-          "type": "string",
-          "description": "Reference to the User who this contact belongs to. (Relationship: User 1:N EmergencyContact)"
-        },
-        "name": {
-          "type": "string",
-          "description": "The name of the emergency contact."
-        },
-        "phoneNumber": {
-          "type": "string",
-          "description": "The phone number of the emergency contact."
-        },
-        "relationship": {
-          "type": "string",
-          "description": "The relationship to the user (e.g., mother, friend)."
-        }
-      },
-      "required": [
-        "id",
-        "userId",
-        "name",
-        "phoneNumber",
-        "relationship"
-      ]
-    },
     "User": {
       "$schema": "http://json-schema.org/draft-07/schema#",
       "title": "User",
       "type": "object",
-      "description": "Represents a user of the application.",
+      "description": "Represents a user of the application, including their profile and emergency information.",
       "properties": {
         "id": {
           "type": "string",
-          "description": "Unique identifier for the user."
+          "description": "Unique identifier for the user (matches Firebase Auth UID)."
         },
         "email": {
           "type": "string",
@@ -203,6 +168,36 @@
         "name": {
           "type": "string",
           "description": "The user's display name."
+        },
+        "emergencyContact": {
+          "type": "object",
+          "description": "The user's primary emergency contact.",
+          "properties": {
+            "name": {
+              "type": "string"
+            },
+            "phone": {
+              "type": "string"
+            },
+            "relation": {
+              "type": "string"
+            }
+          }
+        },
+        "medicalInfo": {
+          "type": "object",
+          "description": "The user's critical medical information.",
+          "properties": {
+            "bloodType": {
+              "type": "string"
+            },
+            "allergies": {
+              "type": "string"
+            },
+            "conditions": {
+              "type": "string"
+            }
+          }
         }
       },
       "required": [
@@ -228,7 +223,7 @@
           "schema": {
             "$ref": "#/backend/entities/User"
           },
-          "description": "Stores user profile information. The document ID is the user's UID.",
+          "description": "Stores user profile information, including emergency contacts and medical info. The document ID is the user's UID.",
           "params": [
             {
               "name": "userId",
@@ -304,28 +299,9 @@
             }
           ]
         }
-      },
-      {
-        "path": "/users/{userId}/emergencyContacts/{emergencyContactId}",
-        "definition": {
-          "entityName": "EmergencyContact",
-          "schema": {
-            "$ref": "#/backend/entities/EmergencyContact"
-          },
-          "description": "Stores emergency contacts for a specific user. Ownership is determined by the userId in the path.",
-          "params": [
-            {
-              "name": "userId",
-              "description": "The Firebase Auth UID of the user who owns the emergency contact."
-            },
-            {
-              "name": "emergencyContactId",
-              "description": "The unique ID of the emergency contact."
-            }
-          ]
-        }
       }
     ],
-    "reasoning": "The Firestore structure is designed to ensure authorization independence, clarity, and scalability, following the principles outlined in the prompt. It leverages path-based ownership for user-specific data and denormalization to avoid complex security rules with `get()` calls. Here's a breakdown:\n\n*   **/users/{userId}**: Stores user profiles. Authorization is based on the `request.auth.uid` matching the `{userId}`.\n*   **/users/{userId}/vehicles/{vehicleId}**: Stores vehicle data owned by a specific user. The `userId` is embedded in the path, making ownership clear and enabling simple security rules.  This follows the User 1:N Vehicle relationship. The vehicle documents do not need to duplicate the userId because it can be derived from the collection path.\n*   **/users/{userId}/vehicles/{vehicleId}/documents/{documentId}**: Stores documents related to a specific vehicle. The path includes both `userId` and `vehicleId`, ensuring that only the owner of the vehicle can access these documents. This enforces the Vehicle 1:N Document relationship and continues the hierarchy as requested.\n*   **/users/{userId}/vehicles/{vehicleId}/maintenanceLogs/{maintenanceLogId}**: Stores maintenance logs for a specific vehicle, following the same ownership pattern as documents. The full path ensures proper authorization and data segregation. This structure facilitates the Vehicle 1:N MaintenanceLog relationship.\n*   **/users/{userId}/emergencyContacts/{emergencyContactId}**: Stores emergency contacts for a specific user. The `userId` in the path clearly defines ownership.\n\n**Authorization Independence (CRITICAL):** The structure avoids `get()` calls in security rules by embedding ownership information within the document paths. This enables atomic operations and simplifies security rule logic.  For example, to create a new document for a vehicle, the rule only needs to check that `request.auth.uid == userId` from the path.  It does not need to `get()` the vehicle document to verify ownership.\n\n**QAPs (Rules are not Filters):**\nThe path-based ownership (`/users/{userId}/vehicles/{vehicleId}`) allows for secure listing of vehicles owned by a specific user. The security rule can simply check that `request.auth.uid == userId` to allow the `list` operation.  Similar logic applies to listing documents and maintenance logs for a given vehicle.\n\n**DBAC:** Roles are managed solely through `request.auth.uid`, avoiding custom claims.\n\n**Invariants:** The structure enforces ownership invariants by using hierarchical paths (`/users/{userId}/vehicles/{vehicleId}/...`). Timestamps can be enforced in security rules using `request.time`. Denormalized data (if needed in the future) should follow the denormalization strategy of copying authorization attributes into subcollections.\n\n**Data Clarity and Predictability:** The structure uses explicit state modeling (though the entities do not include status fields, they could be added in the future).  It also employs predictable schema with static keys. Naming conventions are consistent (e.g., `userId`, `vehicleId`)."
+    "reasoning": "The Firestore structure is designed to ensure authorization independence, clarity, and scalability. It leverages path-based ownership for user-specific data and denormalization to avoid complex security rules with `get()` calls.\n\n*   **/users/{userId}**: Stores user profiles, including nested objects for emergency and medical information for fast retrieval. Authorization is based on the `request.auth.uid` matching the `{userId}`.\n*   **/users/{userId}/vehicles/{vehicleId}**: Stores vehicle data owned by a specific user. The `userId` is embedded in the path, making ownership clear and enabling simple security rules.\n*   **/users/{userId}/vehicles/{vehicleId}/documents/{documentId}**: Stores documents related to a specific vehicle. The path includes both `userId` and `vehicleId`, ensuring that only the owner of the vehicle can access these documents.\n*   **/users/{userId}/vehicles/{vehicleId}/maintenanceLogs/{maintenanceLogId}**: Stores maintenance logs for a specific vehicle, following the same ownership pattern as documents.\n\n**Authorization Independence (CRITICAL):** The structure avoids `get()` calls in security rules by embedding ownership information within the document paths. This enables atomic operations and simplifies security rule logic.  For example, to create a new document for a vehicle, the rule only needs to check that `request.auth.uid == userId` from the path.  It does not need to `get()` the vehicle document to verify ownership.\n\nThis updated structure removes the separate `emergencyContacts` collection and nests that information within the `user` document itself. This is a deliberate denormalization strategy to ensure that in an emergency scenario, all of a user's critical information can be retrieved with a single document read, which is faster and more efficient."
   }
 }
+    

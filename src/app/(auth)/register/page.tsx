@@ -64,6 +64,8 @@ export default function RegisterPage() {
         id: user.uid,
         name: values.fullName,
         email: values.email,
+        emergencyContact: { name: '', phone: '', relation: '' },
+        medicalInfo: { bloodType: '', allergies: '', conditions: '' },
       }, { merge: true });
 
       toast({
@@ -153,3 +155,4 @@ export default function RegisterPage() {
     </Card>
   );
 }
+    

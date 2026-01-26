@@ -10,7 +10,7 @@
  * Data Structure:
  * The Firestore database is structured hierarchically, with all user-specific data nested
  * under a top-level '/users' collection. A user's data, including their vehicles, documents,
- * maintenance logs, and emergency contacts, is stored in subcollections under their unique
+ * and maintenance logs is stored in subcollections under their unique
  * user document: /users/{userId}/...
  *
  * Key Security Decisions:
@@ -179,25 +179,7 @@ service cloud.firestore {
           allow delete: if isExistingOwner(userId);
         }
       }
-
-      // --------------------------------------------------------------------
-      // Emergency Contact Rules
-      // --------------------------------------------------------------------
-
-      /**
-       * @description Controls access to a user's emergency contacts.
-       * @path /users/{userId}/emergencyContacts/{emergencyContactId}
-       * @allow (get, list, create, update, delete) A user can fully manage their own emergency contacts.
-       * @deny (any) User 'A' cannot perform any operation on User 'B's emergency contacts.
-       * @principle Enforces document ownership for a user's private contact list.
-       */
-      match /emergencyContacts/{emergencyContactId} {
-        allow get: if isOwner(userId);
-        allow list: if isOwner(userId);
-        allow create: if isOwner(userId) && hasCorrectOwnerIdOnCreate(userId);
-        allow update: if isExistingOwner(userId) && isUserIdImmutable();
-        allow delete: if isExistingOwner(userId);
-      }
     }
   }
 }
+    

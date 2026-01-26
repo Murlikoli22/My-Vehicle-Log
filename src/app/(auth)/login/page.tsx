@@ -75,6 +75,8 @@ export default function LoginPage() {
             id: user.uid,
             name: user.displayName,
             email: user.email,
+            emergencyContact: { name: '', phone: '', relation: '' },
+            medicalInfo: { bloodType: '', allergies: '', conditions: '' },
           },
           { merge: true }
         );
@@ -174,3 +176,4 @@ export default function LoginPage() {
     </Card>
   );
 }
+    

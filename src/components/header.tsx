@@ -14,9 +14,10 @@ import {
   Wrench,
 } from 'lucide-react';
 import { signOut } from 'firebase/auth';
+import { doc } from 'firebase/firestore';
 
 import { cn } from '@/lib/utils';
-import { useAuth } from '@/firebase';
+import { useAuth, useUser, useDoc, useFirestore, useMemoFirebase } from '@/firebase';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -34,7 +35,6 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { AppLogo } from './app-logo';
 import { placeholderImages } from '@/lib/placeholder-images.json';
-import { userProfile } from '@/lib/data';
 
 
 const navItems = [
@@ -43,15 +43,32 @@ const navItems = [
   { href: '/estimate-cost', label: 'Estimate Cost', icon: Calculator },
 ];
 
+interface UserProfile {
+  name: string;
+}
+
 export function Header() {
   const pathname = usePathname();
   const auth = useAuth();
+  const { user } = useUser();
+  const firestore = useFirestore();
+  
+  const userDocRef = useMemoFirebase(() => {
+    if (!user) return null;
+    return doc(firestore, 'users', user.uid);
+  }, [firestore, user]);
+
+  const { data: userProfile } = useDoc<UserProfile>(userDocRef);
+
   const avatarImage = placeholderImages.find(img => img.id === 'user-avatar-1');
 
   const handleLogout = async () => {
     await signOut(auth);
     window.location.href = '/login';
   };
+
+  const displayName = userProfile?.name || user?.displayName || 'User';
+  const displayInitial = displayName.charAt(0).toUpperCase();
 
   const navLinks = (
     <>
@@ -106,14 +123,14 @@ export function Header() {
           <DropdownMenuTrigger asChild>
             <Button variant="secondary" size="icon" className="rounded-full">
               <Avatar className="h-8 w-8">
-                <AvatarImage src={avatarImage?.imageUrl} data-ai-hint={avatarImage?.imageHint} alt={userProfile.name} />
-                <AvatarFallback>{userProfile.name.charAt(0)}</AvatarFallback>
+                <AvatarImage src={user?.photoURL || avatarImage?.imageUrl} data-ai-hint={avatarImage?.imageHint} alt={displayName} />
+                <AvatarFallback>{displayInitial}</AvatarFallback>
               </Avatar>
               <span className="sr-only">Toggle user menu</span>
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
-            <DropdownMenuLabel>My Account</DropdownMenuLabel>
+            <DropdownMenuLabel>{displayName}</DropdownMenuLabel>
             <DropdownMenuSeparator />
             <DropdownMenuItem>
               <User className="mr-2 h-4 w-4" />
@@ -134,3 +151,4 @@ export function Header() {
     </header>
   );
 }
+    
