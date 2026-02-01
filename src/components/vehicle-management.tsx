@@ -196,6 +196,31 @@ export function VehicleManagement({
     await deleteDocumentNonBlocking(recordRef);
   };
 
+  const handleView = (dataUrl?: string) => {
+    if (!dataUrl) return;
+
+    const [header, base64Data] = dataUrl.split(',');
+    if (!header || !base64Data) return;
+
+    const mimeMatch = header.match(/:(.*?);/);
+    if (!mimeMatch || !mimeMatch[1]) return;
+    const mimeString = mimeMatch[1];
+    
+    try {
+      const byteString = atob(base64Data);
+      const ab = new ArrayBuffer(byteString.length);
+      const ia = new Uint8Array(ab);
+      for (let i = 0; i < byteString.length; i++) {
+        ia[i] = byteString.charCodeAt(i);
+      }
+      const blob = new Blob([ab], { type: mimeString });
+      const url = URL.createObjectURL(blob);
+      window.open(url, '_blank');
+    } catch (e) {
+      console.error("Failed to decode and open data URL", e);
+    }
+  };
+
   return (
     <div className="grid md:grid-cols-[280px_1fr] lg:grid-cols-[320px_1fr] gap-8">
       <div className="flex flex-col gap-4">
@@ -396,10 +421,8 @@ export function VehicleManagement({
                            <div className="flex items-center justify-end gap-1">
                                {documentItem.fileUrl && (
                                 <>
-                                    <Button variant="ghost" size="icon" asChild>
-                                      <a href={documentItem.fileUrl} target="_blank" rel="noopener noreferrer" title="View document">
-                                        <Eye className="h-4 w-4" />
-                                      </a>
+                                    <Button variant="ghost" size="icon" onClick={() => handleView(documentItem.fileUrl)} title="View document">
+                                      <Eye className="h-4 w-4" />
                                     </Button>
                                     <Button variant="ghost" size="icon" asChild>
                                       <a href={documentItem.fileUrl} download={`Doc_${documentItem.documentType.replace(/\s/g, '_')}_${selectedVehicle.registrationNumber}`} title="Download document">
@@ -487,10 +510,8 @@ export function VehicleManagement({
                          <TableCell>
                             {record.billUrl && (
                                 <div className="flex items-center justify-start gap-1">
-                                    <Button variant="ghost" size="icon" asChild>
-                                        <a href={record.billUrl} target="_blank" rel="noopener noreferrer" title="View bill">
-                                            <Eye className="h-4 w-4" />
-                                        </a>
+                                    <Button variant="ghost" size="icon" onClick={() => handleView(record.billUrl)} title="View bill">
+                                        <Eye className="h-4 w-4" />
                                     </Button>
                                     <Button variant="ghost" size="icon" asChild>
                                         <a href={record.billUrl} download={`Bill_${record.serviceType.replace(/\s/g, '_')}_${format(parseISO(record.date), "yyyy-MM-dd")}`} title="Download bill">
