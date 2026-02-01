@@ -45,6 +45,7 @@ export function AddDocumentForm({ onSubmit }: AddDocumentFormProps) {
     resolver: zodResolver(formSchema),
     defaultValues: {
       documentType: 'Insurance',
+      fileUrl: '',
     },
   });
 

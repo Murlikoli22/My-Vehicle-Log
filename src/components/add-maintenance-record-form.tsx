@@ -47,6 +47,8 @@ export function AddMaintenanceRecordForm({ onSubmit }: AddMaintenanceRecordFormP
       serviceType: '',
       mechanicDetails: '',
       cost: 0,
+      notes: '',
+      billUrl: '',
     },
   });
 
