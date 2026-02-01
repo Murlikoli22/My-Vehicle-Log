@@ -8,11 +8,11 @@ import {
   LayoutDashboard,
   Menu,
   ShieldAlert,
-  Calculator,
   LogOut,
   User,
   Wrench,
   Milestone,
+  Calculator,
 } from 'lucide-react';
 import { signOut } from 'firebase/auth';
 import { doc } from 'firebase/firestore';

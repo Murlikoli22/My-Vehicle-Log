@@ -1,1 +1,11 @@
-// This file is no longer used and can be safely deleted.
+'use server';
+import {genkit} from 'genkit';
+import {googleAI} from '@genkit-ai/google-genai';
+
+export const ai = genkit({
+  plugins: [
+    googleAI(),
+  ],
+  logLevel: 'debug',
+  enableTracingAndMetrics: true,
+});
