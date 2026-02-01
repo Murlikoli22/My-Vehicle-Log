@@ -551,7 +551,7 @@ export function VehicleManagement({
                                         <Eye className="h-4 w-4" />
                                     </Button>
                                     <Button variant="ghost" size="icon" asChild>
-                                        <a href={record.billUrl} download={`Bill_${record.serviceType.replace(/\s/g, '_')}_${format(parseISO(record.date), "yyyy-MM-dd")}`} title="Download bill">
+                                        <a href={record.billUrl} download={`Bill_${record.serviceType.replace(/\s/g, '_')}_${format(parseISO(record.date), "dd-MM-yyyy")}`} title="Download bill">
                                             <Download className="h-4 w-4" />
                                         </a>
                                     </Button>
