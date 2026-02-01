@@ -120,23 +120,25 @@ export function VehicleManagement({
     setAddVehicleOpen(false);
   };
 
-  const handleAddDocument = async (values: Omit<VehicleDocument, 'id' | 'vehicleId'>) => {
+  const handleAddDocument = async (values: Partial<Omit<VehicleDocument, 'id' | 'vehicleId' | 'uploadDate'>>) => {
     if (!user || !selectedVehicle) return;
     const newDocumentData = {
       ...values,
       vehicleId: selectedVehicle.id,
       uploadDate: new Date().toISOString(),
+      expiryDate: values.expiryDate ? (values.expiryDate as Date).toISOString() : undefined,
     };
     const documentsCollection = collection(firestore, 'users', user.uid, 'vehicles', selectedVehicle.id, 'documents');
     await addDocumentNonBlocking(documentsCollection, newDocumentData);
     setAddDocOpen(false);
   };
-
-  const handleAddMaintenance = async (values: Omit<MaintenanceRecord, 'id' | 'vehicleId'>) => {
+  
+  const handleAddMaintenance = async (values: Partial<Omit<MaintenanceRecord, 'id' | 'vehicleId'>>) => {
     if (!user || !selectedVehicle) return;
     const newMaintenanceData = {
       ...values,
       vehicleId: selectedVehicle.id,
+      date: (values.date as Date).toISOString(),
     };
     const maintenanceCollection = collection(firestore, 'users', user.uid, 'vehicles', selectedVehicle.id, 'maintenanceLogs');
     await addDocumentNonBlocking(maintenanceCollection, newMaintenanceData);
@@ -334,7 +336,6 @@ export function VehicleManagement({
                   <TableHeader>
                     <TableRow>
                       <TableHead>Type</TableHead>
-                      <TableHead>Name</TableHead>
                       <TableHead>Expiry Date</TableHead>
                       <TableHead className="text-right">Actions</TableHead>
                     </TableRow>
@@ -343,7 +344,6 @@ export function VehicleManagement({
                     {getVehicleDocuments(selectedVehicle.id).map(doc => (
                        <TableRow key={doc.id}>
                          <TableCell className="font-medium flex items-center gap-2"><FileText className="h-4 w-4 text-muted-foreground"/> {doc.documentType}</TableCell>
-                         <TableCell>{doc.documentType}</TableCell>
                          <TableCell>
                             {doc.expiryDate ? (
                                 <Badge variant={isExpired(doc.expiryDate) ? "destructive" : "secondary"}>
@@ -354,9 +354,13 @@ export function VehicleManagement({
                             )}
                          </TableCell>
                          <TableCell className="text-right">
-                           <Button variant="ghost" size="icon">
-                             <Download className="h-4 w-4" />
-                           </Button>
+                           {doc.fileUrl && (
+                            <Button variant="ghost" size="icon" asChild>
+                              <a href={doc.fileUrl} target="_blank" rel="noopener noreferrer">
+                                <Download className="h-4 w-4" />
+                              </a>
+                            </Button>
+                           )}
                          </TableCell>
                        </TableRow>
                     ))}
@@ -399,6 +403,7 @@ export function VehicleManagement({
                       <TableHead>Odometer</TableHead>
                       <TableHead>Mechanic</TableHead>
                       <TableHead className="text-right">Cost</TableHead>
+                      <TableHead className="text-right">Bill</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -409,6 +414,15 @@ export function VehicleManagement({
                          <TableCell>{record.odometerReading.toLocaleString()} km</TableCell>
                          <TableCell>{record.mechanicDetails}</TableCell>
                          <TableCell className="text-right font-mono">{new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR' }).format(record.cost)}</TableCell>
+                         <TableCell className="text-right">
+                            {record.billUrl && (
+                                <Button variant="ghost" size="icon" asChild>
+                                    <a href={record.billUrl} target="_blank" rel="noopener noreferrer">
+                                        <Download className="h-4 w-4" />
+                                    </a>
+                                </Button>
+                            )}
+                         </TableCell>
                        </TableRow>
                     ))}
                   </TableBody>
@@ -416,7 +430,7 @@ export function VehicleManagement({
               </CardContent>
               <CardFooter className="justify-end gap-2 text-lg font-semibold border-t pt-4">
                 <span>Total Cost:</span>
-                <span>{new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR' }).format(totalMaintenanceCost)}</span>
+                <span className="font-mono">{new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR' }).format(totalMaintenanceCost)}</span>
               </CardFooter>
             </Card>
           </TabsContent>

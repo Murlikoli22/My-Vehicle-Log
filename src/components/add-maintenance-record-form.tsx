@@ -21,6 +21,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Calendar } from '@/components/ui/calendar';
 import { cn } from '@/lib/utils';
 import { Textarea } from './ui/textarea';
+import type { MaintenanceRecord } from '@/types';
 
 const formSchema = z.object({
   date: z.date({ required_error: 'A date is required.' }),
@@ -29,13 +30,13 @@ const formSchema = z.object({
   mechanicDetails: z.string().min(1, 'Mechanic details are required.'),
   cost: z.coerce.number().min(0, 'Cost must be a positive number.'),
   notes: z.string().optional(),
-  billUrl: z.string().url('Please enter a valid URL.').optional(),
+  bill: z.any().optional(),
 });
 
 type FormValues = z.infer<typeof formSchema>;
 
 interface AddMaintenanceRecordFormProps {
-  onSubmit: (values: FormValues) => Promise<void>;
+  onSubmit: (values: Partial<Omit<MaintenanceRecord, 'id' | 'vehicleId'>>) => Promise<void>;
 }
 
 export function AddMaintenanceRecordForm({ onSubmit }: AddMaintenanceRecordFormProps) {
@@ -48,15 +49,38 @@ export function AddMaintenanceRecordForm({ onSubmit }: AddMaintenanceRecordFormP
       mechanicDetails: '',
       cost: 0,
       notes: '',
-      billUrl: '',
+      bill: undefined,
     },
   });
 
   const { isSubmitting } = form.formState;
 
+  const handleFormSubmit = async (data: FormValues) => {
+    const { bill, ...rest } = data;
+    let billUrl: string | undefined = undefined;
+
+    if (bill && bill.length > 0) {
+      const fileToUpload = bill[0];
+      try {
+        billUrl = await new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = e => resolve(e.target?.result as string);
+          reader.onerror = error => reject(error);
+          reader.readAsDataURL(fileToUpload);
+        });
+      } catch (error) {
+        console.error("Error converting file to data URL", error);
+        form.setError('bill', { type: 'manual', message: 'Could not upload file.' });
+        return;
+      }
+    }
+
+    await onSubmit({ ...rest, billUrl });
+  }
+
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+      <form onSubmit={form.handleSubmit(handleFormSubmit)} className="space-y-4">
         <FormField
           control={form.control}
           name="date"
@@ -159,12 +183,16 @@ export function AddMaintenanceRecordForm({ onSubmit }: AddMaintenanceRecordFormP
         />
         <FormField
           control={form.control}
-          name="billUrl"
+          name="bill"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Bill URL (Optional)</FormLabel>
+              <FormLabel>Upload Bill (Optional)</FormLabel>
               <FormControl>
-                <Input placeholder="https://example.com/bill.pdf" {...field} />
+                <Input 
+                  type="file" 
+                  onChange={(e) => field.onChange(e.target.files)}
+                  className="pt-2 text-sm text-muted-foreground file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-primary/10 file:text-primary hover:file:bg-primary/20"
+                />
               </FormControl>
               <FormMessage />
             </FormItem>

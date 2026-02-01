@@ -31,13 +31,13 @@ import type { VehicleDocument } from '@/types';
 const formSchema = z.object({
   documentType: z.enum(['RC Book', 'Insurance', 'PUC', 'Other']),
   expiryDate: z.date().optional(),
-  fileUrl: z.string().url('Please enter a valid URL.').optional(),
+  file: z.any().optional(),
 });
 
 type FormValues = z.infer<typeof formSchema>;
 
 interface AddDocumentFormProps {
-  onSubmit: (values: FormValues) => Promise<void>;
+  onSubmit: (values: Partial<Omit<VehicleDocument, 'id' | 'vehicleId' | 'uploadDate'>>) => Promise<void>;
 }
 
 export function AddDocumentForm({ onSubmit }: AddDocumentFormProps) {
@@ -45,15 +45,38 @@ export function AddDocumentForm({ onSubmit }: AddDocumentFormProps) {
     resolver: zodResolver(formSchema),
     defaultValues: {
       documentType: 'Insurance',
-      fileUrl: '',
+      file: undefined,
     },
   });
 
   const { isSubmitting } = form.formState;
 
+  const handleFormSubmit = async (data: FormValues) => {
+    const { file, ...rest } = data;
+    let fileUrl: string | undefined = undefined;
+
+    if (file && file.length > 0) {
+      const fileToUpload = file[0];
+      try {
+        fileUrl = await new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = e => resolve(e.target?.result as string);
+          reader.onerror = error => reject(error);
+          reader.readAsDataURL(fileToUpload);
+        });
+      } catch (error) {
+        console.error("Error converting file to data URL", error);
+        form.setError('file', { type: 'manual', message: 'Could not upload file.' });
+        return;
+      }
+    }
+
+    await onSubmit({ ...rest, fileUrl });
+  }
+
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+      <form onSubmit={form.handleSubmit(handleFormSubmit)} className="space-y-4">
         <FormField
           control={form.control}
           name="documentType"
@@ -118,12 +141,16 @@ export function AddDocumentForm({ onSubmit }: AddDocumentFormProps) {
         />
         <FormField
           control={form.control}
-          name="fileUrl"
+          name="file"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>File URL (Optional)</FormLabel>
+              <FormLabel>Upload Document (Optional)</FormLabel>
               <FormControl>
-                <Input placeholder="https://example.com/document.pdf" {...field} />
+                <Input 
+                  type="file" 
+                  onChange={(e) => field.onChange(e.target.files)}
+                  className="pt-2 text-sm text-muted-foreground file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-primary/10 file:text-primary hover:file:bg-primary/20"
+                />
               </FormControl>
               <FormMessage />
             </FormItem>
