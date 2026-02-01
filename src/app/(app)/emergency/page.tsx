@@ -21,6 +21,7 @@ export default function EmergencyPage() {
   const [isSharingLocation, setIsSharingLocation] = useState(false);
   const [location, setLocation] = useState<{ latitude: number; longitude: number } | null>(null);
   const [locationError, setLocationError] = useState<string | null>(null);
+  const [isFullscreen, setIsFullscreen] = useState(false);
   const watchIdRef = useRef<number | null>(null);
 
   const userDocRef = useMemoFirebase(() => {
@@ -222,7 +223,12 @@ export default function EmergencyPage() {
             <MapPin className="mr-2 h-5 w-5" />
             {isSharingLocation ? 'Stop Sharing Location' : 'Share Live Location'}
           </Button>
-          <Button size="lg" variant="outline" className="w-full sm:w-auto">
+          <Button 
+            size="lg" 
+            variant="outline" 
+            className="w-full sm:w-auto"
+            onClick={() => setIsFullscreen(true)}
+          >
             <Maximize className="mr-2 h-5 w-5" />
             Display Fullscreen Info
           </Button>
@@ -278,6 +284,55 @@ export default function EmergencyPage() {
           </CardContent>
         )}
       </Card>
+      
+      {isFullscreen && (
+        <div className="fixed inset-0 z-50 bg-background p-4 sm:p-8 text-foreground">
+          <div className="flex h-full flex-col items-center justify-center text-center relative">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="absolute top-4 right-4 h-12 w-12"
+              onClick={() => setIsFullscreen(false)}
+            >
+              <X className="h-8 w-8" />
+              <span className="sr-only">Exit Fullscreen</span>
+            </Button>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 lg:gap-16 w-full max-w-5xl">
+              <div className="space-y-4">
+                <h2 className="text-3xl font-bold text-primary flex items-center justify-center gap-3"><Phone /> Emergency Contact</h2>
+                <div className="text-2xl space-y-2">
+                  <p><strong>Name:</strong> {userProfile.emergencyContact?.name || 'N/A'}</p>
+                  <p><strong>Phone:</strong> <a href={`tel:${userProfile.emergencyContact?.phone}`} className="text-primary underline">{userProfile.emergencyContact?.phone || 'N/A'}</a></p>
+                  <p><strong>Relation:</strong> {userProfile.emergencyContact?.relation || 'N/A'}</p>
+                </div>
+              </div>
+              <div className="space-y-4">
+                <h2 className="text-3xl font-bold text-primary flex items-center justify-center gap-3"><User /> Medical Information</h2>
+                <div className="text-2xl space-y-2">
+                  <p><strong>Blood Type:</strong> <span className="font-bold text-destructive">{userProfile.medicalInfo?.bloodType || 'N/A'}</span></p>
+                  <p><strong>Allergies:</strong> {userProfile.medicalInfo?.allergies || 'N/A'}</p>
+                  <p><strong>Conditions:</strong> {userProfile.medicalInfo?.conditions || 'N/A'}</p>
+                </div>
+              </div>
+            </div>
+
+            {isSharingLocation && location && (
+              <div className="mt-8 lg:mt-16 space-y-2">
+                <h2 className="text-3xl font-bold text-primary flex items-center justify-center gap-3"><MapPin /> Live Location</h2>
+                <p className="text-2xl">
+                  <strong>Lat:</strong> {location.latitude.toFixed(6)}, <strong>Lon:</strong> {location.longitude.toFixed(6)}
+                </p>
+                <p className="text-lg text-muted-foreground break-all">
+                  <a href={`https://www.google.com/maps?q=${location.latitude},${location.longitude}`} target="_blank" rel="noopener noreferrer" className="text-primary underline">
+                    https://www.google.com/maps?q={location.latitude},{location.longitude}
+                  </a>
+                </p>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
