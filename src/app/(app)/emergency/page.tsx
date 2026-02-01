@@ -1,3 +1,4 @@
+
 'use client';
 
 import { Phone, User, HeartPulse, MapPin, Maximize } from 'lucide-react';
@@ -9,21 +10,7 @@ import { doc } from 'firebase/firestore';
 import { useFirestore } from '@/firebase';
 import { Skeleton } from '@/components/ui/skeleton';
 import { CardDescription } from '@/components/ui/card';
-
-interface UserProfile {
-  name: string;
-  email: string;
-  emergencyContact?: {
-    name: string;
-    phone: string;
-    relation: string;
-  };
-  medicalInfo?: {
-    bloodType: string;
-    allergies: string;
-    conditions: string;
-  };
-}
+import type { UserProfile } from '@/types';
 
 
 export default function EmergencyPage() {

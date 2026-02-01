@@ -1,3 +1,4 @@
+
 export type Vehicle = {
   id: string;
   userId: string;
@@ -39,4 +40,20 @@ export type Reminder = {
   title: string;
   dueDate: string;
   type: 'service' | 'insurance' | 'puc';
+};
+
+export type UserProfile = {
+  id: string;
+  name: string;
+  email: string;
+  emergencyContact?: {
+    name: string;
+    phone: string;
+    relation: string;
+  };
+  medicalInfo?: {
+    bloodType: string;
+    allergies: string;
+    conditions: string;
+  };
 };
