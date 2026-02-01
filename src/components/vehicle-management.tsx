@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import Image from 'next/image';
 import {
   Car,
@@ -14,12 +14,13 @@ import {
   Download,
   Trash2,
   Eye,
+  Camera,
 } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
 
 import type { Vehicle, VehicleDocument, MaintenanceRecord } from '@/types';
 import { cn } from '@/lib/utils';
-import { useUser, useFirestore, addDocumentNonBlocking, deleteDocumentNonBlocking } from '@/firebase';
+import { useUser, useFirestore, addDocumentNonBlocking, deleteDocumentNonBlocking, updateDocumentNonBlocking } from '@/firebase';
 import { collection, doc } from 'firebase/firestore';
 import { Button } from '@/components/ui/button';
 import {
@@ -87,17 +88,25 @@ export function VehicleManagement({
   const [isAddVehicleOpen, setAddVehicleOpen] = useState(false);
   const [isAddDocOpen, setAddDocOpen] = useState(false);
   const [isAddMaintOpen, setAddMaintOpen] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    // If no vehicle is selected and the list is populated, select the first one.
-    if (!selectedVehicle && initialVehicles.length > 0) {
-      setSelectedVehicle(initialVehicles[0]);
+    if (initialVehicles.length > 0) {
+      const currentSelectedId = selectedVehicle?.id;
+      if (currentSelectedId) {
+        const updatedVehicle = initialVehicles.find(v => v.id === currentSelectedId);
+        if (updatedVehicle) {
+          setSelectedVehicle(updatedVehicle);
+        } else {
+          setSelectedVehicle(initialVehicles[0]);
+        }
+      } else {
+        setSelectedVehicle(initialVehicles[0]);
+      }
+    } else {
+      setSelectedVehicle(null);
     }
-    // If the currently selected vehicle is removed from the list, select a new one.
-    if (selectedVehicle && !initialVehicles.some(v => v.id === selectedVehicle.id)) {
-      setSelectedVehicle(initialVehicles[0] || null);
-    }
-  }, [initialVehicles, selectedVehicle]);
+  }, [initialVehicles]);
 
   const { user } = useUser();
   const firestore = useFirestore();
@@ -117,15 +126,18 @@ export function VehicleManagement({
     return new Date(dateString) < new Date();
   };
 
-  const handleAddVehicle = async (values: Omit<Vehicle, 'id' | 'imageUrl' | 'imageHint' | 'userId'>) => {
+  const handleAddVehicle = async (values: Omit<Vehicle, 'id' | 'imageHint' | 'userId'> & { imageUrl?: string }) => {
     if (!user) return;
+    
+    const { imageUrl, ...vehicleData } = values;
+
     const carImage = placeholderImages.find(img => img.id === 'car-default');
     
     const newVehicleData = {
-      ...values,
+      ...vehicleData,
       userId: user.uid,
-      imageUrl: carImage?.imageUrl ?? 'https://picsum.photos/seed/2/600/400',
-      imageHint: carImage?.imageHint ?? 'modern sedan'
+      imageUrl: imageUrl || carImage?.imageUrl || 'https://picsum.photos/seed/2/600/400',
+      imageHint: imageUrl ? `${vehicleData.brand} ${vehicleData.model}` : (carImage?.imageHint || 'modern sedan'),
     };
 
     const vehiclesCollection = collection(firestore, 'users', user.uid, 'vehicles');
@@ -221,6 +233,21 @@ export function VehicleManagement({
     }
   };
 
+  const handlePhotoChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    if (event.target.files && event.target.files[0] && selectedVehicle && user) {
+        const file = event.target.files[0];
+        const reader = new FileReader();
+        reader.readAsDataURL(file);
+        reader.onload = () => {
+            const newImageUrl = reader.result as string;
+            if (!newImageUrl) return;
+
+            const vehicleRef = doc(firestore, 'users', user.uid, 'vehicles', selectedVehicle.id);
+            updateDocumentNonBlocking(vehicleRef, { imageUrl: newImageUrl });
+        };
+    }
+  };
+
   return (
     <div className="grid md:grid-cols-[280px_1fr] lg:grid-cols-[320px_1fr] gap-8">
       <div className="flex flex-col gap-4">
@@ -311,13 +338,23 @@ export function VehicleManagement({
         <Tabs defaultValue="details">
           <div className="flex items-start justify-between gap-4">
             <div className="flex items-center gap-4">
-                 <div className="relative h-20 w-20 rounded-lg overflow-hidden shrink-0">
+                 <div className="relative h-20 w-20 rounded-lg overflow-hidden shrink-0 group/image">
                     <Image
                         src={selectedVehicle.imageUrl}
                         alt={`${selectedVehicle.brand} ${selectedVehicle.model}`}
                         fill
                         className="object-cover"
                         data-ai-hint={selectedVehicle.imageHint}
+                    />
+                     <label htmlFor="photo-upload" className="absolute inset-0 bg-black/50 flex items-center justify-center text-white opacity-0 group-hover/image:opacity-100 transition-opacity cursor-pointer">
+                        <Camera className="h-6 w-6" />
+                    </label>
+                    <input
+                        id="photo-upload"
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={handlePhotoChange}
                     />
                 </div>
                 <div>

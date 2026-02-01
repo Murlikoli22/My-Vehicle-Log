@@ -32,12 +32,13 @@ const formSchema = z.object({
   year: z.coerce.number().min(1980, 'Year must be after 1980').max(new Date().getFullYear() + 1),
   fuelType: z.enum(['Gasoline', 'Diesel', 'Electric', 'Hybrid']),
   odometerReading: z.coerce.number().min(0, 'Odometer reading must be positive'),
+  image: z.instanceof(File).optional(),
 });
 
 type FormValues = z.infer<typeof formSchema>;
 
 interface AddVehicleFormProps {
-  onSubmit: (values: FormValues) => Promise<void>;
+  onSubmit: (values: Omit<FormValues, 'image'> & { imageUrl?: string }) => Promise<void>;
 }
 
 export function AddVehicleForm({ onSubmit }: AddVehicleFormProps) {
@@ -56,9 +57,32 @@ export function AddVehicleForm({ onSubmit }: AddVehicleFormProps) {
 
   const { isSubmitting } = form.formState;
 
+  const handleFormSubmit = async (data: FormValues) => {
+    const { image, ...rest } = data;
+    let imageUrl: string | undefined = undefined;
+
+    if (image) {
+      const fileToUpload = image;
+      try {
+        imageUrl = await new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = e => resolve(e.target?.result as string);
+          reader.onerror = error => reject(error);
+          reader.readAsDataURL(fileToUpload);
+        });
+      } catch (error) {
+        console.error("Error converting file to data URL", error);
+        form.setError('image', { type: 'manual', message: 'Could not upload file.' });
+        return;
+      }
+    }
+
+    await onSubmit({ ...rest, imageUrl });
+  }
+
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+      <form onSubmit={form.handleSubmit(handleFormSubmit)} className="space-y-4">
         <FormField
           control={form.control}
           name="registrationNumber"
@@ -176,6 +200,24 @@ export function AddVehicleForm({ onSubmit }: AddVehicleFormProps) {
               )}
             />
         </div>
+        <FormField
+          control={form.control}
+          name="image"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Vehicle Photo (Optional)</FormLabel>
+              <FormControl>
+                <Input 
+                  type="file"
+                  accept="image/*"
+                  onChange={(e) => field.onChange(e.target.files?.[0])}
+                  className="pt-2 text-sm text-muted-foreground file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-primary/10 file:text-primary hover:file:bg-primary/20"
+                />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
         <Button type="submit" disabled={isSubmitting} className="w-full">
           {isSubmitting ? (
             <>
