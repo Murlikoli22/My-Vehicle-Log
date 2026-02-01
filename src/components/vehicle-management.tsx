@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import {
   Car,
@@ -20,7 +20,7 @@ import { format, parseISO } from 'date-fns';
 import type { Vehicle, VehicleDocument, MaintenanceRecord } from '@/types';
 import { cn } from '@/lib/utils';
 import { useUser, useFirestore, addDocumentNonBlocking, deleteDocumentNonBlocking } from '@/firebase';
-import { collection, doc, writeBatch } from 'firebase/firestore';
+import { collection, doc } from 'firebase/firestore';
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -83,10 +83,21 @@ export function VehicleManagement({
   initialDocuments,
   initialMaintenanceRecords,
 }: VehicleManagementProps) {
-  const [selectedVehicle, setSelectedVehicle] = useState<Vehicle | null>(initialVehicles[0] || null);
+  const [selectedVehicle, setSelectedVehicle] = useState<Vehicle | null>(null);
   const [isAddVehicleOpen, setAddVehicleOpen] = useState(false);
   const [isAddDocOpen, setAddDocOpen] = useState(false);
   const [isAddMaintOpen, setAddMaintOpen] = useState(false);
+
+  useEffect(() => {
+    // If no vehicle is selected and the list is populated, select the first one.
+    if (!selectedVehicle && initialVehicles.length > 0) {
+      setSelectedVehicle(initialVehicles[0]);
+    }
+    // If the currently selected vehicle is removed from the list, select a new one.
+    if (selectedVehicle && !initialVehicles.some(v => v.id === selectedVehicle.id)) {
+      setSelectedVehicle(initialVehicles[0] || null);
+    }
+  }, [initialVehicles, selectedVehicle]);
 
   const { user } = useUser();
   const firestore = useFirestore();
@@ -171,10 +182,6 @@ export function VehicleManagement({
     // In a real app, you'd use a backend function to delete subcollections.
     // For this example, we'll delete what we can from the client, though it's not exhaustive.
     await deleteDocumentNonBlocking(vehicleRef);
-
-    if (selectedVehicle?.id === vehicleId) {
-        setSelectedVehicle(initialVehicles.length > 1 ? initialVehicles.filter(v => v.id !== vehicleId)[0] : null);
-    }
   };
 
   return (

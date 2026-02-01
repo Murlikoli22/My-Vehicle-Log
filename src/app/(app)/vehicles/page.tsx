@@ -1,7 +1,7 @@
 'use client';
 
 import { useMemo, useEffect, useState } from 'react';
-import { collection, query, orderBy, where, getDocs, onSnapshot } from 'firebase/firestore';
+import { collection, query, orderBy, onSnapshot } from 'firebase/firestore';
 import { useUser, useFirestore, useCollection, useMemoFirebase } from '@/firebase';
 import { VehicleManagement } from '@/components/vehicle-management';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -14,8 +14,7 @@ export default function VehiclesPage() {
 
   const [documents, setDocuments] = useState<VehicleDocument[]>([]);
   const [maintenanceRecords, setMaintenanceRecords] = useState<MaintenanceRecord[]>([]);
-  const [docsLoading, setDocsLoading] = useState(true);
-  const [maintLoading, setMaintLoading] = useState(true);
+  const [subCollectionsLoading, setSubCollectionsLoading] = useState(true);
 
   const vehiclesQuery = useMemoFirebase(() => {
     if (!user) return null;
@@ -25,48 +24,61 @@ export default function VehiclesPage() {
   const { data: vehicles, isLoading: vehiclesLoading } = useCollection<Vehicle>(vehiclesQuery);
 
   useEffect(() => {
-    if (!vehicles || !user) return;
-
-    setDocsLoading(true);
-    setMaintLoading(true);
-
-    const unsubscribes: (() => void)[] = [];
-
-    const fetchSubCollections = async () => {
-      let allDocuments: VehicleDocument[] = [];
-      let allMaintenance: MaintenanceRecord[] = [];
-
-      for (const vehicle of vehicles) {
-        // Documents
-        const docsRef = collection(firestore, 'users', user.uid, 'vehicles', vehicle.id, 'documents');
-        const docsUnsub = onSnapshot(docsRef, (snapshot) => {
-          const newDocs = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as VehicleDocument));
-          allDocuments = [...allDocuments.filter(d => d.vehicleId !== vehicle.id), ...newDocs];
-          setDocuments([...allDocuments]);
-        });
-        unsubscribes.push(docsUnsub);
-
-        // Maintenance
-        const maintRef = collection(firestore, 'users', user.uid, 'vehicles', vehicle.id, 'maintenanceLogs');
-        const maintUnsub = onSnapshot(maintRef, (snapshot) => {
-          const newMaint = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as MaintenanceRecord));
-          allMaintenance = [...allMaintenance.filter(m => m.vehicleId !== vehicle.id), ...newMaint];
-          setMaintenanceRecords([...allMaintenance]);
-        });
-        unsubscribes.push(maintUnsub);
+    if (!vehicles || !user) {
+      if (!vehiclesLoading && !isUserLoading) {
+        setSubCollectionsLoading(false);
       }
-      setDocsLoading(false);
-      setMaintLoading(false);
-    };
+      return;
+    }
 
-    fetchSubCollections();
+    if (vehicles.length === 0) {
+        setDocuments([]);
+        setMaintenanceRecords([]);
+        setSubCollectionsLoading(false);
+        return;
+    }
+
+    setSubCollectionsLoading(true);
+    const unsubscribes: (() => void)[] = [];
+    let allDocuments: VehicleDocument[] = [];
+    let allMaintenance: MaintenanceRecord[] = [];
+
+    // This is not a perfect loading indicator, as onSubLoad will be called on every snapshot.
+    // However, it's consistent with the dashboard and will set loading to false after the initial data fetch.
+    let pending = vehicles.length * 2;
+    const onSubLoad = () => {
+        pending--;
+        if(pending === 0) {
+            setSubCollectionsLoading(false);
+        }
+    }
+
+    vehicles.forEach(vehicle => {
+      const docsRef = collection(firestore, 'users', user.uid, 'vehicles', vehicle.id, 'documents');
+      const docsUnsub = onSnapshot(docsRef, (snapshot) => {
+        const newDocs = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as VehicleDocument));
+        allDocuments = [...allDocuments.filter(d => d.vehicleId !== vehicle.id), ...newDocs];
+        setDocuments([...allDocuments]);
+        onSubLoad();
+      }, () => onSubLoad());
+      unsubscribes.push(docsUnsub);
+
+      const maintRef = collection(firestore, 'users', user.uid, 'vehicles', vehicle.id, 'maintenanceLogs');
+      const maintUnsub = onSnapshot(maintRef, (snapshot) => {
+        const newMaint = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as MaintenanceRecord));
+        allMaintenance = [...allMaintenance.filter(m => m.vehicleId !== vehicle.id), ...newMaint];
+        setMaintenanceRecords([...allMaintenance]);
+        onSubLoad();
+      }, () => onSubLoad());
+      unsubscribes.push(maintUnsub);
+    });
 
     return () => {
       unsubscribes.forEach(unsub => unsub());
     };
-  }, [vehicles, user, firestore]);
+  }, [vehicles, user, firestore, isUserLoading, vehiclesLoading]);
 
-  const isLoading = isUserLoading || vehiclesLoading || docsLoading || maintLoading;
+  const isLoading = isUserLoading || vehiclesLoading || subCollectionsLoading;
   
   if (isLoading) {
     return (
