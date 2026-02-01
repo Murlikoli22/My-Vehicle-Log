@@ -3,32 +3,39 @@
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
-import { MapPin } from 'lucide-react';
+import { MapPin, Navigation, Satellite } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+
+type MapType = 'street' | 'satellite';
 
 export default function MapsPage() {
   const [location, setLocation] = useState<{ latitude: number; longitude: number } | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [mapType, setMapType] = useState<MapType>('street');
+  const [start, setStart] = useState('');
+  const [destination, setDestination] = useState('');
+  const [mapUrl, setMapUrl] = useState('');
 
   useEffect(() => {
     let isMounted = true;
     if (typeof window !== 'undefined' && 'geolocation' in navigator) {
-      // Using a timeout to prevent the location request from hanging indefinitely
       const timeoutId = setTimeout(() => {
         if (isLoading && isMounted) {
           setError("Location request timed out. Please try again.");
           setIsLoading(false);
         }
-      }, 10000); // 10-second timeout
+      }, 10000);
 
       navigator.geolocation.getCurrentPosition(
         (position) => {
           if (isMounted) {
             clearTimeout(timeoutId);
-            setLocation({
-              latitude: position.coords.latitude,
-              longitude: position.coords.longitude,
-            });
+            const { latitude, longitude } = position.coords;
+            setLocation({ latitude, longitude });
+            setStart(`${latitude}, ${longitude}`); // Set current location as default start
             setIsLoading(false);
           }
         },
@@ -53,22 +60,83 @@ export default function MapsPage() {
     }
   }, [isLoading]);
 
-  const getMapUrl = () => {
-    if (!location) return "";
+  useEffect(() => {
+    if (!location) return;
+
     const { latitude, longitude } = location;
-    // Bounding box for the map view
-    const delta = 0.01;
-    const bbox = `${longitude - delta},${latitude - delta},${longitude + delta},${latitude + delta}`;
-    return `https://www.openstreetmap.org/export/embed.html?bbox=${bbox}&layer=mapnik&marker=${latitude},${longitude}`;
+
+    if (mapType === 'street') {
+      const delta = 0.01;
+      const bbox = `${longitude - delta},${latitude - delta},${longitude + delta},${latitude + delta}`;
+      setMapUrl(`https://www.openstreetmap.org/export/embed.html?bbox=${bbox}&layer=mapnik&marker=${latitude},${longitude}`);
+    } else { // satellite
+      setMapUrl(`https://www.bing.com/maps/embed?cp=${latitude}~${longitude}&lvl=16&sty=h&sp=point.${latitude}_${longitude}_Your%20Location`);
+    }
+
+  }, [location, mapType]);
+
+  const handleGetDirections = () => {
+    if (!destination) {
+      alert("Please enter a destination.");
+      return;
+    }
+    const origin = start || (location ? `${location.latitude},${location.longitude}` : '');
+    const url = `https://www.google.com/maps/dir/?api=1&origin=${encodeURIComponent(origin)}&destination=${encodeURIComponent(destination)}`;
+    window.open(url, '_blank');
   };
 
   return (
     <Card>
       <CardHeader>
         <CardTitle>Map</CardTitle>
-        <CardDescription>Your current location is shown on the map below.</CardDescription>
+        <CardDescription>View your location, switch map styles, and get directions.</CardDescription>
       </CardHeader>
-      <CardContent>
+      <CardContent className="space-y-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-end">
+            <div className="grid gap-2">
+                <Label htmlFor="start">Start Location</Label>
+                <Input 
+                    id="start" 
+                    placeholder="Your current location" 
+                    value={start}
+                    onChange={(e) => setStart(e.target.value)}
+                />
+            </div>
+            <div className="grid gap-2">
+                <Label htmlFor="destination">Destination</Label>
+                <Input 
+                    id="destination" 
+                    placeholder="Enter a destination"
+                    value={destination}
+                    onChange={(e) => setDestination(e.target.value)}
+                />
+            </div>
+            <Button onClick={handleGetDirections} className="w-full md:w-auto md:col-span-2">
+                <Navigation className="mr-2 h-4 w-4" />
+                Get Directions
+            </Button>
+        </div>
+
+        <div className="space-y-2">
+            <Label>Map Type</Label>
+            <div className="flex items-center gap-2">
+                <Button 
+                    variant={mapType === 'street' ? 'default' : 'outline'}
+                    onClick={() => setMapType('street')}
+                >
+                    <MapPin className="mr-2 h-4 w-4" />
+                    Street
+                </Button>
+                <Button 
+                    variant={mapType === 'satellite' ? 'default' : 'outline'}
+                    onClick={() => setMapType('satellite')}
+                >
+                    <Satellite className="mr-2 h-4 w-4" />
+                    Satellite
+                </Button>
+            </div>
+        </div>
+        
         {isLoading && (
           <div className="space-y-4">
             <Skeleton className="h-[500px] w-full rounded-lg" />
@@ -93,8 +161,9 @@ export default function MapsPage() {
               height="100%"
               style={{ border: 0 }}
               loading="lazy"
-              src={getMapUrl()}
-              title="Current Location Map"
+              src={mapUrl}
+              title="Location Map"
+              allowFullScreen
             ></iframe>
           </div>
         )}
