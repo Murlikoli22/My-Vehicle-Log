@@ -1,15 +1,16 @@
 
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { Map, Loader2, Navigation } from 'lucide-react';
+import { Map, Loader2, Navigation, Terminal } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
 const formSchema = z.object({
   source: z.string().min(1, 'Source is required.'),
@@ -21,6 +22,13 @@ type FormValues = z.infer<typeof formSchema>;
 export default function DirectionsPage() {
   const [mapUrl, setMapUrl] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [apiKeyMissing, setApiKeyMissing] = useState(false);
+
+  useEffect(() => {
+    if (!process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY) {
+      setApiKeyMissing(true);
+    }
+  }, []);
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -31,9 +39,9 @@ export default function DirectionsPage() {
   });
 
   const onSubmit = (values: FormValues) => {
+    if (apiKeyMissing) return;
+
     setIsLoading(true);
-    // IMPORTANT: You need to add your Google Maps API key to the .env.local file
-    // The key should be names NEXT_PUBLIC_GOOGLE_MAPS_API_KEY
     const googleMapsUrl = `https://www.google.com/maps/embed/v1/directions?key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}&origin=${encodeURIComponent(values.source)}&destination=${encodeURIComponent(values.destination)}`;
     setMapUrl(googleMapsUrl);
   };
@@ -55,51 +63,61 @@ export default function DirectionsPage() {
           </div>
         </CardHeader>
         <CardContent>
-          <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-              <div className="grid md:grid-cols-2 gap-6">
-                <FormField
-                  control={form.control}
-                  name="source"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Starting Point</FormLabel>
-                      <FormControl>
-                        <Input placeholder="e.g., Your current location" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
+          {apiKeyMissing ? (
+             <Alert variant="destructive">
+                <Terminal className="h-4 w-4" />
+                <AlertTitle>Configuration Required</AlertTitle>
+                <AlertDescription>
+                  The Google Maps API key is missing. Please add your key to the <code>.env</code> file as <code>NEXT_PUBLIC_GOOGLE_MAPS_API_KEY</code> and restart the development server.
+                </AlertDescription>
+            </Alert>
+          ) : (
+            <Form {...form}>
+              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+                <div className="grid md:grid-cols-2 gap-6">
+                  <FormField
+                    control={form.control}
+                    name="source"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Starting Point</FormLabel>
+                        <FormControl>
+                          <Input placeholder="e.g., Your current location" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="destination"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Destination</FormLabel>
+                        <FormControl>
+                          <Input placeholder="e.g., Your destination" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+                <Button type="submit" disabled={isLoading}>
+                  {isLoading ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Loading...
+                    </>
+                  ) : (
+                    <>
+                      <Navigation className="mr-2 h-4 w-4" /> Get Directions
+                    </>
                   )}
-                />
-                <FormField
-                  control={form.control}
-                  name="destination"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Destination</FormLabel>
-                      <FormControl>
-                        <Input placeholder="e.g., Your destination" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-              <Button type="submit" disabled={isLoading}>
-                {isLoading ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Loading...
-                  </>
-                ) : (
-                  <>
-                    <Navigation className="mr-2 h-4 w-4" /> Get Directions
-                  </>
-                )}
-              </Button>
-            </form>
-          </Form>
+                </Button>
+              </form>
+            </Form>
+          )}
 
-          {mapUrl && (
+          {mapUrl && !apiKeyMissing && (
             <div className="mt-8 rounded-lg overflow-hidden border aspect-video">
               <iframe
                 width="100%"
