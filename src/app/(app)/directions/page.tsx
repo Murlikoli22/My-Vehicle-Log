@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -11,6 +10,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Skeleton } from '@/components/ui/skeleton';
 
 const formSchema = z.object({
   source: z.string().min(1, 'Source is required.'),
@@ -22,12 +22,10 @@ type FormValues = z.infer<typeof formSchema>;
 export default function DirectionsPage() {
   const [mapUrl, setMapUrl] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
-  const [apiKeyMissing, setApiKeyMissing] = useState(false);
+  const [hasMounted, setHasMounted] = useState(false);
 
   useEffect(() => {
-    if (!process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY) {
-      setApiKeyMissing(true);
-    }
+    setHasMounted(true);
   }, []);
 
   const form = useForm<FormValues>({
@@ -38,6 +36,8 @@ export default function DirectionsPage() {
     },
   });
 
+  const apiKeyMissing = !process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
+
   const onSubmit = (values: FormValues) => {
     if (apiKeyMissing) return;
 
@@ -45,6 +45,43 @@ export default function DirectionsPage() {
     const googleMapsUrl = `https://www.google.com/maps/embed/v1/directions?key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}&origin=${encodeURIComponent(values.source)}&destination=${encodeURIComponent(values.destination)}`;
     setMapUrl(googleMapsUrl);
   };
+
+  if (!hasMounted) {
+    return (
+        <div className="max-w-5xl mx-auto">
+            <Card>
+                <CardHeader>
+                    <div className="flex items-center gap-4">
+                        <div className="p-3 bg-primary/10 rounded-full">
+                            <Map className="h-6 w-6 text-primary" />
+                        </div>
+                        <div>
+                            <CardTitle className="text-2xl">Get Directions</CardTitle>
+                            <CardDescription>
+                                Enter your starting point and destination to get real-time directions from Google Maps.
+                            </CardDescription>
+                        </div>
+                    </div>
+                </CardHeader>
+                <CardContent>
+                    <div className="space-y-6">
+                        <div className="grid md:grid-cols-2 gap-6">
+                            <div className="space-y-2">
+                                <Skeleton className="h-4 w-20" />
+                                <Skeleton className="h-10 w-full" />
+                            </div>
+                            <div className="space-y-2">
+                                <Skeleton className="h-4 w-20" />
+                                <Skeleton className="h-10 w-full" />
+                            </div>
+                        </div>
+                        <Skeleton className="h-10 w-40" />
+                    </div>
+                </CardContent>
+            </Card>
+        </div>
+    );
+  }
 
   return (
     <div className="max-w-5xl mx-auto">
