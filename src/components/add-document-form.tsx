@@ -31,7 +31,7 @@ import type { VehicleDocument } from '@/types';
 const formSchema = z.object({
   documentType: z.enum(['RC Book', 'Insurance', 'PUC', 'Other']),
   expiryDate: z.date().optional(),
-  file: z.any().optional(),
+  file: z.instanceof(File).optional(),
 });
 
 type FormValues = z.infer<typeof formSchema>;
@@ -45,7 +45,6 @@ export function AddDocumentForm({ onSubmit }: AddDocumentFormProps) {
     resolver: zodResolver(formSchema),
     defaultValues: {
       documentType: 'Insurance',
-      file: undefined,
     },
   });
 
@@ -55,8 +54,8 @@ export function AddDocumentForm({ onSubmit }: AddDocumentFormProps) {
     const { file, ...rest } = data;
     let fileUrl: string | undefined = undefined;
 
-    if (file && file.length > 0) {
-      const fileToUpload = file[0];
+    if (file) {
+      const fileToUpload = file;
       try {
         fileUrl = await new Promise((resolve, reject) => {
           const reader = new FileReader();
@@ -148,7 +147,7 @@ export function AddDocumentForm({ onSubmit }: AddDocumentFormProps) {
               <FormControl>
                 <Input 
                   type="file" 
-                  onChange={(e) => field.onChange(e.target.files)}
+                  onChange={(e) => field.onChange(e.target.files?.[0])}
                   className="pt-2 text-sm text-muted-foreground file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-primary/10 file:text-primary hover:file:bg-primary/20"
                 />
               </FormControl>

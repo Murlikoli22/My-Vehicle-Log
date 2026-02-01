@@ -30,7 +30,7 @@ const formSchema = z.object({
   mechanicDetails: z.string().min(1, 'Mechanic details are required.'),
   cost: z.coerce.number().min(0, 'Cost must be a positive number.'),
   notes: z.string().optional(),
-  bill: z.any().optional(),
+  bill: z.instanceof(File).optional(),
 });
 
 type FormValues = z.infer<typeof formSchema>;
@@ -49,7 +49,6 @@ export function AddMaintenanceRecordForm({ onSubmit }: AddMaintenanceRecordFormP
       mechanicDetails: '',
       cost: 0,
       notes: '',
-      bill: undefined,
     },
   });
 
@@ -59,8 +58,8 @@ export function AddMaintenanceRecordForm({ onSubmit }: AddMaintenanceRecordFormP
     const { bill, ...rest } = data;
     let billUrl: string | undefined = undefined;
 
-    if (bill && bill.length > 0) {
-      const fileToUpload = bill[0];
+    if (bill) {
+      const fileToUpload = bill;
       try {
         billUrl = await new Promise((resolve, reject) => {
           const reader = new FileReader();
@@ -190,7 +189,7 @@ export function AddMaintenanceRecordForm({ onSubmit }: AddMaintenanceRecordFormP
               <FormControl>
                 <Input 
                   type="file" 
-                  onChange={(e) => field.onChange(e.target.files)}
+                  onChange={(e) => field.onChange(e.target.files?.[0])}
                   className="pt-2 text-sm text-muted-foreground file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-primary/10 file:text-primary hover:file:bg-primary/20"
                 />
               </FormControl>
