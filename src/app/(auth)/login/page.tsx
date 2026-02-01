@@ -8,14 +8,13 @@ import { GoogleAuthProvider, signInWithPopup, UserCredential } from 'firebase/au
 import { doc, setDoc, getDoc } from 'firebase/firestore';
 import { Loader2 } from 'lucide-react';
 
-import { useAuth, useFirestore, useUser } from '@/firebase';
+import { useAuth, useFirestore, useUser, initiateEmailSignIn, initiateAnonymousSignIn } from '@/firebase';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { AppLogo } from '@/components/app-logo';
 import { useToast } from '@/hooks/use-toast';
-import { initiateEmailSignIn } from '@/firebase/non-blocking-login';
 import { setDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 
 function GoogleIcon() {
@@ -114,6 +113,10 @@ export default function LoginPage() {
     initiateEmailSignIn(auth, email, password);
   };
 
+  const handleAnonymousSignIn = () => {
+    initiateAnonymousSignIn(auth);
+  };
+
 
   return (
     <Card className="w-full max-w-sm">
@@ -176,8 +179,8 @@ export default function LoginPage() {
           </Link>
         </div>
         <div className="mt-2 text-center text-sm">
-          <Button variant="link" asChild className="text-muted-foreground">
-            <Link href="/dashboard">Continue without logging in</Link>
+          <Button variant="link" className="text-muted-foreground" onClick={handleAnonymousSignIn}>
+            Continue without logging in
           </Button>
         </div>
       </CardContent>

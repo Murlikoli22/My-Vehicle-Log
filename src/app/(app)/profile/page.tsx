@@ -70,7 +70,7 @@ export default function ProfilePage() {
     );
   }
 
-  if (!user) {
+  if (!user || user.isAnonymous) {
     return (
       <div className="max-w-3xl mx-auto">
         <Card>
