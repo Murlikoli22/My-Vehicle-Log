@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
@@ -35,8 +35,13 @@ export default function RegisterPage() {
   const { toast } = useToast();
   const { user: authUser } = useUser();
 
+  useEffect(() => {
+    if (authUser) {
+      router.push('/dashboard');
+    }
+  }, [authUser, router]);
+
   if (authUser) {
-    router.push('/dashboard');
     return null;
   }
 
@@ -72,7 +77,6 @@ export default function RegisterPage() {
         title: 'Account Created!',
         description: 'You have been successfully registered.',
       });
-      router.push('/dashboard');
     } catch (error: any) {
       console.error('Registration Error:', error);
       let description = 'An unexpected error occurred. Please try again.';
@@ -155,4 +159,3 @@ export default function RegisterPage() {
     </Card>
   );
 }
-    

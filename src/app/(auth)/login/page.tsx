@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { GoogleAuthProvider, signInWithPopup, UserCredential } from 'firebase/auth';
@@ -52,8 +52,13 @@ export default function LoginPage() {
   const { toast } = useToast();
   const { user } = useUser();
 
+  useEffect(() => {
+    if (user) {
+      router.push('/dashboard');
+    }
+  }, [user, router]);
+
   if (user) {
-    router.push('/dashboard');
     return null;
   }
 
@@ -86,7 +91,6 @@ export default function LoginPage() {
         title: 'Signed In!',
         description: 'You have been successfully signed in.',
       });
-      router.push('/dashboard');
     } catch (error: any) {
       console.error('Google Sign-In Error:', error);
       toast({
@@ -176,4 +180,3 @@ export default function LoginPage() {
     </Card>
   );
 }
-    
