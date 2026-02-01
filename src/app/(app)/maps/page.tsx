@@ -58,7 +58,7 @@ export default function MapsPage() {
     return () => {
       isMounted = false;
     }
-  }, [isLoading]);
+  }, []);
 
   useEffect(() => {
     if (!location) return;
