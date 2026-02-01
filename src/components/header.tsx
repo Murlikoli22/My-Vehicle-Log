@@ -11,7 +11,6 @@ import {
   LogOut,
   User,
   Wrench,
-  Milestone,
 } from 'lucide-react';
 import { signOut } from 'firebase/auth';
 import { doc } from 'firebase/firestore';
