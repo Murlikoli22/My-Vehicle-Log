@@ -31,6 +31,7 @@ import {
 import type { Vehicle, Reminder, MaintenanceRecord, VehicleDocument } from '@/types';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
+import { ScrollArea } from '@/components/ui/scroll-area';
 
 
 // Helper function to get reminder icon
@@ -278,37 +279,39 @@ export default function DashboardPage() {
             </CardHeader>
             <CardContent>
               {reminders.length > 0 ? (
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Vehicle</TableHead>
-                      <TableHead>Reminder</TableHead>
-                      <TableHead className="text-right">Due Date</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {reminders.map((reminder) => {
-                      const vehicle = vehicles?.find((v) => v.id === reminder.vehicleId);
-                      return (
-                        <TableRow key={reminder.id}>
-                          <TableCell>
-                            <div className="font-medium">{vehicle?.brand} {vehicle?.model}</div>
-                            <div className="hidden text-sm text-muted-foreground md:inline">
-                              {vehicle?.registrationNumber}
-                            </div>
-                          </TableCell>
-                          <TableCell>
-                              <div className="flex items-center gap-2">
-                                  {getReminderIcon(reminder.type)}
-                                  <span>{reminder.title}</span>
+                <ScrollArea className="h-72">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Vehicle</TableHead>
+                        <TableHead>Reminder</TableHead>
+                        <TableHead className="text-right">Due Date</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {reminders.map((reminder) => {
+                        const vehicle = vehicles?.find((v) => v.id === reminder.vehicleId);
+                        return (
+                          <TableRow key={reminder.id}>
+                            <TableCell>
+                              <div className="font-medium">{vehicle?.brand} {vehicle?.model}</div>
+                              <div className="hidden text-sm text-muted-foreground md:inline">
+                                {vehicle?.registrationNumber}
                               </div>
-                          </TableCell>
-                          <TableCell className="text-right">{new Date(reminder.dueDate).toLocaleDateString()}</TableCell>
-                        </TableRow>
-                      );
-                    })}
-                  </TableBody>
-                </Table>
+                            </TableCell>
+                            <TableCell>
+                                <div className="flex items-center gap-2">
+                                    {getReminderIcon(reminder.type)}
+                                    <span>{reminder.title}</span>
+                                </div>
+                            </TableCell>
+                            <TableCell className="text-right">{new Date(reminder.dueDate).toLocaleDateString()}</TableCell>
+                          </TableRow>
+                        );
+                      })}
+                    </TableBody>
+                  </Table>
+                </ScrollArea>
               ) : (
                 <div className="text-center text-muted-foreground p-8">
                   <Bell className="mx-auto h-8 w-8 mb-2" />
@@ -320,4 +323,3 @@ export default function DashboardPage() {
         </div>
       );
 }
-    

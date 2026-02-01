@@ -69,6 +69,7 @@ import { AddVehicleForm } from './add-vehicle-form';
 import { AddDocumentForm } from './add-document-form';
 import { AddMaintenanceRecordForm } from './add-maintenance-record-form';
 import { placeholderImages } from '@/lib/placeholder-images.json';
+import { ScrollArea } from './ui/scroll-area';
 
 interface VehicleManagementProps {
   initialVehicles: Vehicle[];
@@ -171,7 +172,7 @@ export function VehicleManagement({
                     Add Vehicle
                 </Button>
               </DialogTrigger>
-              <DialogContent className="sm:max-w-[425px]">
+              <DialogContent className="sm:max-w-[425px] max-h-[90vh] overflow-y-auto">
                 <DialogHeader>
                   <DialogTitle>Add New Vehicle</DialogTitle>
                   <DialogDescription>
@@ -182,65 +183,67 @@ export function VehicleManagement({
               </DialogContent>
             </Dialog>
         </div>
-        <div className="flex flex-col gap-3">
-          {initialVehicles.map((vehicle) => (
-            <div key={vehicle.id} className="group flex items-center gap-2 rounded-lg border pr-2 text-left transition-colors hover:bg-muted/50">
-              <button
-                onClick={() => setSelectedVehicle(vehicle)}
-                className={cn(
-                  'flex-1 flex items-center gap-4 rounded-lg p-3 text-left transition-colors',
-                  selectedVehicle?.id === vehicle.id && 'bg-muted'
-                )}
-              >
-                <div className="relative h-12 w-12 rounded-md overflow-hidden shrink-0">
-                  <Image
-                      src={vehicle.imageUrl}
-                      alt={`${vehicle.brand} ${vehicle.model}`}
-                      fill
-                      className="object-cover"
-                      data-ai-hint={vehicle.imageHint}
-                  />
-                </div>
-                <div className="flex-1 truncate">
-                  <p className="font-medium truncate">{vehicle.brand} {vehicle.model}</p>
-                  <p className="text-sm text-muted-foreground">{vehicle.registrationNumber}</p>
-                </div>
-              </button>
-              <AlertDialog>
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" size="icon" className="shrink-0 h-8 w-8 opacity-50 group-hover:opacity-100">
-                      <MoreVertical className="h-4 w-4" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent>
-                    <AlertDialogTrigger asChild>
-                      <DropdownMenuItem className="text-destructive">
-                        <Trash2 className="mr-2 h-4 w-4" />
-                        Remove
-                      </DropdownMenuItem>
-                    </AlertDialogTrigger>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-                 <AlertDialogContent>
-                  <AlertDialogHeader>
-                    <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-                    <AlertDialogDescription>
-                      This action cannot be undone. This will permanently delete the vehicle
-                      and all associated documents and maintenance records.
-                    </AlertDialogDescription>
-                  </AlertDialogHeader>
-                  <AlertDialogFooter>
-                    <AlertDialogCancel>Cancel</AlertDialogCancel>
-                    <AlertDialogAction onClick={() => handleRemoveVehicle(vehicle.id)} className="bg-destructive hover:bg-destructive/90">
-                      Delete
-                    </AlertDialogAction>
-                  </AlertDialogFooter>
-                </AlertDialogContent>
-              </AlertDialog>
-            </div>
-          ))}
-        </div>
+        <ScrollArea className="h-[calc(100vh-12rem)]">
+          <div className="flex flex-col gap-3 pr-4">
+            {initialVehicles.map((vehicle) => (
+              <div key={vehicle.id} className="group flex items-center gap-2 rounded-lg border pr-2 text-left transition-colors hover:bg-muted/50">
+                <button
+                  onClick={() => setSelectedVehicle(vehicle)}
+                  className={cn(
+                    'flex-1 flex items-center gap-4 rounded-lg p-3 text-left transition-colors',
+                    selectedVehicle?.id === vehicle.id && 'bg-muted'
+                  )}
+                >
+                  <div className="relative h-12 w-12 rounded-md overflow-hidden shrink-0">
+                    <Image
+                        src={vehicle.imageUrl}
+                        alt={`${vehicle.brand} ${vehicle.model}`}
+                        fill
+                        className="object-cover"
+                        data-ai-hint={vehicle.imageHint}
+                    />
+                  </div>
+                  <div className="flex-1 truncate">
+                    <p className="font-medium truncate">{vehicle.brand} {vehicle.model}</p>
+                    <p className="text-sm text-muted-foreground">{vehicle.registrationNumber}</p>
+                  </div>
+                </button>
+                <AlertDialog>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="ghost" size="icon" className="shrink-0 h-8 w-8 opacity-50 group-hover:opacity-100">
+                        <MoreVertical className="h-4 w-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent>
+                      <AlertDialogTrigger asChild>
+                        <DropdownMenuItem className="text-destructive">
+                          <Trash2 className="mr-2 h-4 w-4" />
+                          Remove
+                        </DropdownMenuItem>
+                      </AlertDialogTrigger>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        This action cannot be undone. This will permanently delete the vehicle
+                        and all associated documents and maintenance records.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Cancel</AlertDialogCancel>
+                      <AlertDialogAction onClick={() => handleRemoveVehicle(vehicle.id)} className="bg-destructive hover:bg-destructive/90">
+                        Delete
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+              </div>
+            ))}
+          </div>
+        </ScrollArea>
       </div>
 
       {selectedVehicle ? (
@@ -320,7 +323,7 @@ export function VehicleManagement({
                         <PlusCircle className="mr-2 h-4 w-4" /> Add Document
                     </Button>
                   </DialogTrigger>
-                  <DialogContent className="sm:max-w-[425px]">
+                  <DialogContent className="sm:max-w-[425px] max-h-[90vh] overflow-y-auto">
                     <DialogHeader>
                       <DialogTitle>Add New Document</DialogTitle>
                       <DialogDescription>
@@ -383,7 +386,7 @@ export function VehicleManagement({
                         <PlusCircle className="mr-2 h-4 w-4" /> Add Record
                     </Button>
                   </DialogTrigger>
-                  <DialogContent className="sm:max-w-[425px]">
+                  <DialogContent className="sm:max-w-[425px] max-h-[90vh] overflow-y-auto">
                     <DialogHeader>
                       <DialogTitle>Add Maintenance Record</DialogTitle>
                       <DialogDescription>
