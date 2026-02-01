@@ -1,7 +1,6 @@
-
 'use client';
 
-import { Phone, User, HeartPulse, MapPin, Maximize } from 'lucide-react';
+import { Phone, User, HeartPulse, MapPin, Maximize, X } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
@@ -11,9 +10,11 @@ import { useFirestore } from '@/firebase';
 import { Skeleton } from '@/components/ui/skeleton';
 import { CardDescription } from '@/components/ui/card';
 import type { UserProfile } from '@/types';
+import { useRouter } from 'next/navigation';
 
 
 export default function EmergencyPage() {
+  const router = useRouter();
   const { user, isUserLoading } = useUser();
   const firestore = useFirestore();
 
@@ -29,8 +30,11 @@ export default function EmergencyPage() {
   if (isLoading) {
     return (
       <div className="mx-auto max-w-4xl">
-        <Card className="border-2 border-accent bg-accent/5">
-          <CardHeader className="text-center">
+        <Card className="relative border-2 border-accent bg-accent/5">
+          <Button variant="ghost" size="icon" className="absolute top-4 right-4" disabled>
+            <X className="h-6 w-6" />
+          </Button>
+          <CardHeader className="text-center pt-12">
             <HeartPulse className="mx-auto h-12 w-12 text-accent" />
             <CardTitle className="text-3xl font-bold text-accent mt-2">Emergency Mode</CardTitle>
             <p className="text-muted-foreground">
@@ -69,7 +73,16 @@ export default function EmergencyPage() {
   if (!userProfile) {
     return (
       <div className="mx-auto max-w-4xl">
-        <Card className="text-center p-8">
+        <Card className="relative text-center p-8">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="absolute top-4 right-4 text-muted-foreground hover:text-foreground"
+              onClick={() => router.push('/dashboard')}
+            >
+              <X className="h-6 w-6" />
+              <span className="sr-only">Close</span>
+            </Button>
           <CardTitle>No Profile Data</CardTitle>
           <CardDescription>Could not load user profile information. Please complete your profile.</CardDescription>
         </Card>
@@ -79,8 +92,17 @@ export default function EmergencyPage() {
 
   return (
     <div className="mx-auto max-w-4xl">
-      <Card className="border-2 border-accent bg-accent/5">
-        <CardHeader className="text-center">
+      <Card className="relative border-2 border-accent bg-accent/5">
+        <Button
+          variant="ghost"
+          size="icon"
+          className="absolute top-4 right-4 text-muted-foreground hover:text-foreground"
+          onClick={() => router.push('/dashboard')}
+        >
+          <X className="h-6 w-6" />
+          <span className="sr-only">Close</span>
+        </Button>
+        <CardHeader className="text-center pt-12">
           <HeartPulse className="mx-auto h-12 w-12 text-accent" />
           <CardTitle className="text-3xl font-bold text-accent mt-2">Emergency Mode</CardTitle>
           <p className="text-muted-foreground">
