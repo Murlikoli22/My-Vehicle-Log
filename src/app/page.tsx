@@ -2,10 +2,10 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { AppLogo } from '@/components/app-logo';
-import { placeholderImages } from '@/lib/placeholder-images.json';
+import { PlaceHolderImages } from '@/lib/placeholder-images';
 
 export default function LandingPage() {
-  const heroImage = placeholderImages.find((img) => img.id === 'hero-background');
+  const heroImage = PlaceHolderImages.find((img) => img.id === 'hero-background');
 
   return (
     <div className="relative flex min-h-screen flex-col items-center justify-center overflow-hidden">

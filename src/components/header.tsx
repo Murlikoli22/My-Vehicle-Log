@@ -34,7 +34,7 @@ import {
 } from '@/components/ui/sheet';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { AppLogo } from './app-logo';
-import { placeholderImages } from '@/lib/placeholder-images.json';
+import { PlaceHolderImages } from '@/lib/placeholder-images';
 import type { UserProfile } from '@/types';
 
 
@@ -57,7 +57,7 @@ export function Header() {
 
   const { data: userProfile } = useDoc<UserProfile>(userDocRef);
 
-  const avatarPlaceholder = placeholderImages.find(img => img.id === 'user-avatar-1');
+  const avatarPlaceholder = PlaceHolderImages.find(img => img.id === 'user-avatar-1');
 
   const handleLogout = async () => {
     await signOut(auth);

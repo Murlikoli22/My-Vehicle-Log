@@ -70,7 +70,7 @@ import {
 import { AddVehicleForm } from './add-vehicle-form';
 import { AddDocumentForm } from './add-document-form';
 import { AddMaintenanceRecordForm } from './add-maintenance-record-form';
-import { placeholderImages } from '@/lib/placeholder-images.json';
+import { PlaceHolderImages } from '@/lib/placeholder-images';
 import { ScrollArea } from './ui/scroll-area';
 
 interface VehicleManagementProps {
@@ -131,7 +131,7 @@ export function VehicleManagement({
     
     const { imageUrl, ...vehicleData } = values;
 
-    const carImage = placeholderImages.find(img => img.id === 'car-default');
+    const carImage = PlaceHolderImages.find(img => img.id === 'car-default');
     
     const newVehicleData = {
       ...vehicleData,

@@ -20,7 +20,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from './ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
-import { placeholderImages } from '@/lib/placeholder-images.json';
+import { PlaceHolderImages } from '@/lib/placeholder-images';
 import { Textarea } from './ui/textarea';
 
 const profileFormSchema = z.object({
@@ -49,7 +49,7 @@ interface ProfileFormProps {
 
 export function ProfileForm({ userProfile, onSubmit }: ProfileFormProps) {
   const [avatarPreview, setAvatarPreview] = useState<string | null>(userProfile.photoURL || null);
-  const avatarPlaceholder = placeholderImages.find(p => p.id === 'user-avatar-1');
+  const avatarPlaceholder = PlaceHolderImages.find(p => p.id === 'user-avatar-1');
 
   const form = useForm<FormValues>({
     resolver: zodResolver(profileFormSchema),
