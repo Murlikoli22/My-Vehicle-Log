@@ -1,6 +1,7 @@
 
 'use client';
 
+import Link from 'next/link';
 import { useUser, useFirestore, useDoc, useMemoFirebase, setDocumentNonBlocking } from '@/firebase';
 import { doc } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
@@ -9,6 +10,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { ProfileForm } from '@/components/profile-form';
 import type { UserProfile } from '@/types';
 import { useRouter } from 'next/navigation';
+import { Button } from '@/components/ui/button';
 
 export default function ProfilePage() {
   const { user, isUserLoading } = useUser();
@@ -45,15 +47,15 @@ export default function ProfilePage() {
 
   const isLoading = isUserLoading || isProfileLoading;
 
-  return (
-    <div className="max-w-3xl mx-auto">
-      <Card>
-        <CardHeader>
-          <CardTitle>Profile</CardTitle>
-          <CardDescription>Manage your personal information, emergency contacts, and medical details.</CardDescription>
-        </CardHeader>
-        <CardContent>
-          {isLoading ? (
+  if (isLoading) {
+    return (
+      <div className="max-w-3xl mx-auto">
+        <Card>
+          <CardHeader>
+            <CardTitle>Profile</CardTitle>
+            <CardDescription>Manage your personal information, emergency contacts, and medical details.</CardDescription>
+          </CardHeader>
+          <CardContent>
             <div className="space-y-6">
               <Skeleton className="h-10 w-1/2" />
               <div className="space-y-4">
@@ -62,7 +64,45 @@ export default function ProfilePage() {
               </div>
               <Skeleton className="h-10 w-24" />
             </div>
-          ) : userProfile ? (
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  if (!user) {
+    return (
+      <div className="max-w-3xl mx-auto">
+        <Card>
+          <CardHeader>
+            <CardTitle>Join Us</CardTitle>
+            <CardDescription>Create an account or log in to manage your profile and unlock all features.</CardDescription>
+          </CardHeader>
+          <CardContent className="flex flex-col items-center justify-center gap-4 pt-6">
+            <Button asChild size="lg" className="w-full">
+              <Link href="/login">Login</Link>
+            </Button>
+            <Button asChild variant="outline" size="lg" className="w-full">
+              <Link href="/register">Sign Up</Link>
+            </Button>
+            <p className="text-sm text-muted-foreground mt-4">
+              Creating an account lets you save your vehicles, documents, and preferences.
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  return (
+    <div className="max-w-3xl mx-auto">
+      <Card>
+        <CardHeader>
+          <CardTitle>Profile</CardTitle>
+          <CardDescription>Manage your personal information, emergency contacts, and medical details.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          {userProfile ? (
             <ProfileForm userProfile={userProfile} onSubmit={handleProfileUpdate} />
           ) : (
             <p>Could not load profile data.</p>
