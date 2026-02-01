@@ -2,13 +2,14 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { LayoutDashboard, Car, ShieldAlert, User, Map } from 'lucide-react';
+import { LayoutDashboard, Car, ShieldAlert, User, Map, Calculator } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const navItems = [
   { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { href: '/vehicles', label: 'Vehicles', icon: Car },
   { href: '/maps', label: 'Map', icon: Map },
+  { href: '/estimate-cost', label: 'Estimate', icon: Calculator },
   { href: '/emergency', label: 'Emergency', icon: ShieldAlert },
   { href: '/profile', label: 'Profile', icon: User },
 ];
@@ -18,13 +19,13 @@ export function BottomNav() {
 
   return (
     <div className="fixed bottom-0 left-0 z-50 w-full h-16 border-t bg-card text-card-foreground md:hidden">
-      <div className="grid h-full max-w-lg grid-cols-5 mx-auto font-medium">
+      <div className="grid h-full max-w-lg grid-cols-6 mx-auto font-medium">
         {navItems.map((item) => (
           <Link
             key={item.href}
             href={item.href}
             className={cn(
-              'inline-flex flex-col items-center justify-center px-5 hover:bg-muted/50 group transition-colors',
+              'inline-flex flex-col items-center justify-center px-2 hover:bg-muted/50 group transition-colors',
               pathname === item.href ? 'text-primary' : 'text-muted-foreground hover:text-foreground'
             )}
           >
