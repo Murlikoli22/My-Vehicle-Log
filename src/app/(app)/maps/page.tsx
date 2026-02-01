@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
-import { MapPin, Navigation, Satellite } from 'lucide-react';
+import { MapPin, Navigation, Satellite, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -18,6 +18,7 @@ export default function MapsPage() {
   const [start, setStart] = useState('');
   const [destination, setDestination] = useState('');
   const [mapUrl, setMapUrl] = useState('');
+  const [isShowingDirections, setIsShowingDirections] = useState(false);
 
   useEffect(() => {
     let isMounted = true;
@@ -61,6 +62,7 @@ export default function MapsPage() {
   }, [isLoading]);
 
   useEffect(() => {
+    if (isShowingDirections) return;
     if (!location) return;
 
     const { latitude, longitude } = location;
@@ -73,7 +75,7 @@ export default function MapsPage() {
       setMapUrl(`https://www.bing.com/maps/embed?cp=${latitude}~${longitude}&lvl=16&sty=h&sp=point.${latitude}_${longitude}_Your%20Location`);
     }
 
-  }, [location, mapType]);
+  }, [location, mapType, isShowingDirections]);
 
   const handleGetDirections = () => {
     if (!destination) {
@@ -81,9 +83,15 @@ export default function MapsPage() {
       return;
     }
     const origin = start || (location ? `${location.latitude},${location.longitude}` : '');
-    const url = `https://www.google.com/maps/dir/?api=1&origin=${encodeURIComponent(origin)}&destination=${encodeURIComponent(destination)}`;
-    window.open(url, '_blank');
+    const bingDirectionsUrl = `https://www.bing.com/maps/embed?rtp=adr.${encodeURIComponent(origin)}~adr.${encodeURIComponent(destination)}`;
+    setMapUrl(bingDirectionsUrl);
+    setIsShowingDirections(true);
   };
+
+  const handleMapTypeChange = (newMapType: MapType) => {
+    setMapType(newMapType);
+    setIsShowingDirections(false);
+  }
 
   return (
     <Card>
@@ -111,25 +119,33 @@ export default function MapsPage() {
                     onChange={(e) => setDestination(e.target.value)}
                 />
             </div>
-            <Button onClick={handleGetDirections} className="w-full md:w-auto md:col-span-2">
-                <Navigation className="mr-2 h-4 w-4" />
-                Get Directions
-            </Button>
+            <div className="md:col-span-2 flex flex-col sm:flex-row gap-2">
+                <Button onClick={handleGetDirections} className="w-full">
+                    <Navigation className="mr-2 h-4 w-4" />
+                    Get Directions
+                </Button>
+                {isShowingDirections && (
+                    <Button onClick={() => setIsShowingDirections(false)} variant="secondary" className="w-full">
+                        <X className="mr-2 h-4 w-4" />
+                        Clear Route
+                    </Button>
+                )}
+            </div>
         </div>
 
         <div className="space-y-2">
             <Label>Map Type</Label>
             <div className="flex items-center gap-2">
                 <Button 
-                    variant={mapType === 'street' ? 'default' : 'outline'}
-                    onClick={() => setMapType('street')}
+                    variant={mapType === 'street' && !isShowingDirections ? 'default' : 'outline'}
+                    onClick={() => handleMapTypeChange('street')}
                 >
                     <MapPin className="mr-2 h-4 w-4" />
                     Street
                 </Button>
                 <Button 
-                    variant={mapType === 'satellite' ? 'default' : 'outline'}
-                    onClick={() => setMapType('satellite')}
+                    variant={mapType === 'satellite' && !isShowingDirections ? 'default' : 'outline'}
+                    onClick={() => handleMapTypeChange('satellite')}
                 >
                     <Satellite className="mr-2 h-4 w-4" />
                     Satellite
