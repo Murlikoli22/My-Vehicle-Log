@@ -86,18 +86,18 @@ export function AddMaintenanceRecordForm({ onSubmit }: AddMaintenanceRecordFormP
           render={({ field }) => (
             <FormItem className="flex flex-col">
               <FormLabel>Date of Service</FormLabel>
-              <Popover modal={true}>
+              <Popover>
                 <PopoverTrigger asChild>
                   <FormControl>
                     <Button
                       variant={'outline'}
                       className={cn(
-                        'w-full pl-3 text-left font-normal',
+                        'w-full justify-between font-normal',
                         !field.value && 'text-muted-foreground'
                       )}
                     >
                       {field.value ? format(field.value, 'PPP') : <span>Pick a date</span>}
-                      <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                      <CalendarIcon className="h-4 w-4 opacity-50" />
                     </Button>
                   </FormControl>
                 </PopoverTrigger>
