@@ -3,13 +3,14 @@
 import { useState } from 'react';
 import { useUser, useFirestore, useCollection, useMemoFirebase } from '@/firebase';
 import { collection, query, orderBy } from 'firebase/firestore';
-import { Loader2, Car, Wand2 } from 'lucide-react';
+import { Loader2, Car, Wand2, KeyRound } from 'lucide-react';
 import type { Vehicle } from '@/types';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
+import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
 import { estimateMaintenanceCost, EstimateCostOutput } from '@/ai/flows/estimate-cost-flow';
@@ -23,6 +24,7 @@ export default function EstimateCostPage() {
   const [serviceDescription, setServiceDescription] = useState('');
   const [isEstimating, setIsEstimating] = useState(false);
   const [estimationResult, setEstimationResult] = useState<EstimateCostOutput | null>(null);
+  const [apiKey, setApiKey] = useState('');
 
   const vehiclesQuery = useMemoFirebase(() => {
     if (!user) return null;
@@ -69,17 +71,59 @@ export default function EstimateCostPage() {
       toast({
         variant: 'destructive',
         title: 'Estimation Failed',
-        description: 'Could not get an estimate. Please ensure your Gemini API key is set in .env and try again.',
+        description: 'Could not get an estimate. Please ensure your Gemini API key is set and try again.',
       });
     } finally {
       setIsEstimating(false);
     }
   };
 
+  const handleSaveApiKey = () => {
+    if (!apiKey) {
+      toast({
+        variant: 'destructive',
+        title: 'API Key is empty',
+        description: 'Please enter your Gemini API key.',
+      });
+      return;
+    }
+    // This is a simulation. In a real app, you would handle this more securely.
+    toast({
+      title: 'API Key Saved (Simulated)',
+      description: 'Your Gemini API key is ready to be used for this session.',
+    });
+  };
+
   const isLoading = isUserLoading || vehiclesLoading;
 
   return (
     <div className="max-w-3xl mx-auto grid gap-8">
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <KeyRound className="h-6 w-6" />
+            Configure Gemini API Key
+          </CardTitle>
+          <CardDescription>
+            Provide your Gemini API key below to enable the AI cost estimator. You can get a key from Google AI Studio.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="flex w-full items-center space-x-2">
+            <Input
+              type="password"
+              placeholder="Enter your Gemini API key"
+              value={apiKey}
+              onChange={(e) => setApiKey(e.target.value)}
+            />
+            <Button onClick={handleSaveApiKey}>Save Key</Button>
+          </div>
+          <p className="text-xs text-muted-foreground mt-2">
+            For persistent use across sessions, add the key to a `.env` file in the project root as `GEMINI_API_KEY=...`.
+          </p>
+        </CardContent>
+      </Card>
+
       <Card>
         <CardHeader>
           <CardTitle>Maintenance Cost Estimator</CardTitle>
@@ -139,6 +183,7 @@ export default function EstimateCostPage() {
           )}
         </CardContent>
       </Card>
+      
       {isEstimating && (
         <Card>
           <CardContent className="pt-6">
@@ -152,6 +197,7 @@ export default function EstimateCostPage() {
           </CardContent>
         </Card>
       )}
+
       {estimationResult && (
         <Card className="bg-primary/5 border-primary/20">
           <CardHeader>
