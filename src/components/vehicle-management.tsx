@@ -183,6 +183,18 @@ export function VehicleManagement({
     // For this example, we'll delete what we can from the client, though it's not exhaustive.
     await deleteDocumentNonBlocking(vehicleRef);
   };
+  
+  const handleRemoveDocument = async (documentId: string) => {
+    if (!user || !selectedVehicle) return;
+    const documentRef = doc(firestore, 'users', user.uid, 'vehicles', selectedVehicle.id, 'documents', documentId);
+    await deleteDocumentNonBlocking(documentRef);
+  };
+
+  const handleRemoveMaintenanceRecord = async (recordId: string) => {
+    if (!user || !selectedVehicle) return;
+    const recordRef = doc(firestore, 'users', user.uid, 'vehicles', selectedVehicle.id, 'maintenanceLogs', recordId);
+    await deleteDocumentNonBlocking(recordRef);
+  };
 
   return (
     <div className="grid md:grid-cols-[280px_1fr] lg:grid-cols-[320px_1fr] gap-8">
@@ -368,33 +380,56 @@ export function VehicleManagement({
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {getVehicleDocuments(selectedVehicle.id).map(doc => (
-                       <TableRow key={doc.id}>
-                         <TableCell className="font-medium flex items-center gap-2"><FileText className="h-4 w-4 text-muted-foreground"/> {doc.documentType}</TableCell>
+                    {getVehicleDocuments(selectedVehicle.id).map(documentItem => (
+                       <TableRow key={documentItem.id}>
+                         <TableCell className="font-medium flex items-center gap-2"><FileText className="h-4 w-4 text-muted-foreground"/> {documentItem.documentType}</TableCell>
                          <TableCell>
-                            {doc.expiryDate ? (
-                                <Badge variant={isExpired(doc.expiryDate) ? "destructive" : "secondary"}>
-                                    Expires {format(parseISO(doc.expiryDate), "dd MMM yyyy")}
+                            {documentItem.expiryDate ? (
+                                <Badge variant={isExpired(documentItem.expiryDate) ? "destructive" : "secondary"}>
+                                    Expires {format(parseISO(documentItem.expiryDate), "dd MMM yyyy")}
                                 </Badge>
                             ) : (
                                 <span className="text-muted-foreground">-</span>
                             )}
                          </TableCell>
                          <TableCell className="text-right">
-                           {doc.fileUrl && (
-                            <div className="flex items-center justify-end gap-1">
-                                <Button variant="ghost" size="icon" asChild>
-                                  <a href={doc.fileUrl} target="_blank" rel="noopener noreferrer" title="View document">
-                                    <Eye className="h-4 w-4" />
-                                  </a>
-                                </Button>
-                                <Button variant="ghost" size="icon" asChild>
-                                  <a href={doc.fileUrl} download={`Doc_${doc.documentType.replace(/\s/g, '_')}_${selectedVehicle.registrationNumber}`} title="Download document">
-                                    <Download className="h-4 w-4" />
-                                  </a>
-                                </Button>
-                            </div>
-                           )}
+                           <div className="flex items-center justify-end gap-1">
+                               {documentItem.fileUrl && (
+                                <>
+                                    <Button variant="ghost" size="icon" asChild>
+                                      <a href={documentItem.fileUrl} target="_blank" rel="noopener noreferrer" title="View document">
+                                        <Eye className="h-4 w-4" />
+                                      </a>
+                                    </Button>
+                                    <Button variant="ghost" size="icon" asChild>
+                                      <a href={documentItem.fileUrl} download={`Doc_${documentItem.documentType.replace(/\s/g, '_')}_${selectedVehicle.registrationNumber}`} title="Download document">
+                                        <Download className="h-4 w-4" />
+                                      </a>
+                                    </Button>
+                                </>
+                               )}
+                                <AlertDialog>
+                                  <AlertDialogTrigger asChild>
+                                    <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive">
+                                      <Trash2 className="h-4 w-4" />
+                                    </Button>
+                                  </AlertDialogTrigger>
+                                  <AlertDialogContent>
+                                    <AlertDialogHeader>
+                                      <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                                      <AlertDialogDescription>
+                                        This action cannot be undone. This will permanently delete the document.
+                                      </AlertDialogDescription>
+                                    </AlertDialogHeader>
+                                    <AlertDialogFooter>
+                                      <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                      <AlertDialogAction onClick={() => handleRemoveDocument(documentItem.id)} className="bg-destructive hover:bg-destructive/90">
+                                        Delete
+                                      </AlertDialogAction>
+                                    </AlertDialogFooter>
+                                  </AlertDialogContent>
+                                </AlertDialog>
+                           </div>
                          </TableCell>
                        </TableRow>
                     ))}
@@ -437,7 +472,8 @@ export function VehicleManagement({
                       <TableHead>Odometer</TableHead>
                       <TableHead>Mechanic</TableHead>
                       <TableHead className="text-right">Cost</TableHead>
-                      <TableHead className="text-right">Bill</TableHead>
+                      <TableHead>Bill</TableHead>
+                      <TableHead className="text-right">Actions</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -448,9 +484,9 @@ export function VehicleManagement({
                          <TableCell>{record.odometerReading.toLocaleString()} km</TableCell>
                          <TableCell>{record.mechanicDetails}</TableCell>
                          <TableCell className="text-right font-mono">{new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR' }).format(record.cost)}</TableCell>
-                         <TableCell className="text-right">
+                         <TableCell>
                             {record.billUrl && (
-                                <div className="flex items-center justify-end gap-1">
+                                <div className="flex items-center justify-start gap-1">
                                     <Button variant="ghost" size="icon" asChild>
                                         <a href={record.billUrl} target="_blank" rel="noopener noreferrer" title="View bill">
                                             <Eye className="h-4 w-4" />
@@ -463,6 +499,29 @@ export function VehicleManagement({
                                     </Button>
                                 </div>
                             )}
+                         </TableCell>
+                         <TableCell className="text-right">
+                           <AlertDialog>
+                             <AlertDialogTrigger asChild>
+                               <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive">
+                                 <Trash2 className="h-4 w-4" />
+                               </Button>
+                             </AlertDialogTrigger>
+                             <AlertDialogContent>
+                               <AlertDialogHeader>
+                                 <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                                 <AlertDialogDescription>
+                                   This action cannot be undone. This will permanently delete this maintenance record.
+                                 </AlertDialogDescription>
+                               </AlertDialogHeader>
+                               <AlertDialogFooter>
+                                 <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                 <AlertDialogAction onClick={() => handleRemoveMaintenanceRecord(record.id)} className="bg-destructive hover:bg-destructive/90">
+                                   Delete
+                                 </AlertDialogAction>
+                               </AlertDialogFooter>
+                             </AlertDialogContent>
+                           </AlertDialog>
                          </TableCell>
                        </TableRow>
                     ))}
