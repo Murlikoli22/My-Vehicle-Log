@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import Image from 'next/image';
 import {
   Car,
@@ -49,6 +49,7 @@ interface UserProfile {
 
 export function Header() {
   const pathname = usePathname();
+  const router = useRouter();
   const auth = useAuth();
   const { user } = useUser();
   const firestore = useFirestore();
@@ -132,11 +133,11 @@ export function Header() {
           <DropdownMenuContent align="end">
             <DropdownMenuLabel>{displayName}</DropdownMenuLabel>
             <DropdownMenuSeparator />
-            <DropdownMenuItem>
+            <DropdownMenuItem onSelect={() => router.push('/profile')}>
               <User className="mr-2 h-4 w-4" />
               <span>Profile</span>
             </DropdownMenuItem>
-            <DropdownMenuItem>
+            <DropdownMenuItem onSelect={() => router.push('/settings')}>
               <Wrench className="mr-2 h-4 w-4" />
               <span>Settings</span>
             </DropdownMenuItem>
@@ -151,4 +152,3 @@ export function Header() {
     </header>
   );
 }
-    
