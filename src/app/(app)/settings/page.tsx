@@ -3,7 +3,7 @@
 
 import * as React from 'react';
 import { useTheme } from 'next-themes';
-import { Sun, Moon, KeyRound } from 'lucide-react';
+import { Sun, Moon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -21,8 +21,6 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Input } from '@/components/ui/input';
-import { useToast } from '@/hooks/use-toast';
 
 const colorThemes = [
     { name: 'Green', value: 'theme-green' },
@@ -33,12 +31,10 @@ const colorThemes = [
 export default function SettingsPage() {
   const [mounted, setMounted] = React.useState(false);
   const { setTheme, resolvedTheme } = useTheme();
-  const { toast } = useToast();
   
   // The color theme is managed separately from light/dark mode.
   // We use localStorage to persist it and apply a class to the html element.
   const [colorTheme, setColorTheme] = React.useState('theme-green');
-  const [apiKey, setApiKey] = React.useState('');
 
   React.useEffect(() => {
     setMounted(true);
@@ -46,9 +42,6 @@ export default function SettingsPage() {
     setColorTheme(savedTheme);
     document.documentElement.classList.remove(...colorThemes.map(t => t.value));
     document.documentElement.classList.add(savedTheme);
-
-    const savedApiKey = localStorage.getItem('gemini-api-key') || '';
-    setApiKey(savedApiKey);
   }, []);
 
   const handleColorThemeChange = (value: string) => {
@@ -56,14 +49,6 @@ export default function SettingsPage() {
     localStorage.setItem('color-theme', value);
     document.documentElement.classList.remove(...colorThemes.map(t => t.value));
     document.documentElement.classList.add(value);
-  };
-
-  const handleApiKeySave = () => {
-    localStorage.setItem('gemini-api-key', apiKey);
-    toast({
-        title: "API Key Saved",
-        description: "Your Gemini API key has been saved locally.",
-    });
   };
 
   if (!mounted) {
@@ -86,19 +71,6 @@ export default function SettingsPage() {
                         <Skeleton className="h-6 w-32" />
                         <Skeleton className="h-10 w-48" />
                     </div>
-                </CardContent>
-            </Card>
-            <Card>
-                <CardHeader>
-                    <Skeleton className="h-8 w-32" />
-                    <Skeleton className="h-4 w-72" />
-                </CardHeader>
-                <CardContent className="space-y-4">
-                     <div className="space-y-2">
-                        <Skeleton className="h-4 w-24" />
-                        <Skeleton className="h-10 w-full" />
-                    </div>
-                    <Skeleton className="h-10 w-24" />
                 </CardContent>
             </Card>
         </div>
@@ -150,35 +122,6 @@ export default function SettingsPage() {
                 </SelectContent>
             </Select>
           </div>
-        </CardContent>
-      </Card>
-      
-      <Card>
-        <CardHeader>
-          <CardTitle>API Configuration</CardTitle>
-          <CardDescription>
-            Manage API keys for external services like Google Gemini for cost estimation.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="gemini-api-key">Gemini API Key</Label>
-            <div className="flex items-center gap-2">
-                <KeyRound className="h-5 w-5 text-muted-foreground" />
-                <Input 
-                    id="gemini-api-key" 
-                    type="password"
-                    placeholder="Enter your Google Gemini API key"
-                    value={apiKey}
-                    onChange={(e) => setApiKey(e.target.value)}
-                    className="flex-1"
-                />
-            </div>
-            <p className="text-sm text-muted-foreground">
-              You can get a free API key from <a href="https://aistudio.google.com/" target="_blank" rel="noopener noreferrer" className="underline text-primary">Google AI Studio</a>. The key is stored locally in your browser.
-            </p>
-          </div>
-          <Button onClick={handleApiKeySave}>Save API Key</Button>
         </CardContent>
       </Card>
     </div>
