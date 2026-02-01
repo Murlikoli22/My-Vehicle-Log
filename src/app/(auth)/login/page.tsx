@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -80,6 +81,9 @@ export default function LoginPage() {
             id: user.uid,
             name: user.displayName,
             email: user.email,
+            phone: user.phoneNumber || '',
+            address: '',
+            photoURL: user.photoURL || '',
             emergencyContact: { name: '', phone: '', relation: '' },
             medicalInfo: { bloodType: '', allergies: '', conditions: '' },
           },

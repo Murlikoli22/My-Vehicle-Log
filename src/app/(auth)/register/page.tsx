@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -69,6 +70,9 @@ export default function RegisterPage() {
         id: user.uid,
         name: values.fullName,
         email: values.email,
+        phone: '',
+        address: '',
+        photoURL: '',
         emergencyContact: { name: '', phone: '', relation: '' },
         medicalInfo: { bloodType: '', allergies: '', conditions: '' },
       }, { merge: true });

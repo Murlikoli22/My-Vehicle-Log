@@ -25,8 +25,17 @@ export default function ProfilePage() {
 
   const handleProfileUpdate = (values: Partial<UserProfile>) => {
     if (!userDocRef) return;
+    
+    const updateData: { [key: string]: any } = { ...values };
 
-    setDocumentNonBlocking(userDocRef, values, { merge: true });
+    // If a new photoURL isn't provided as a data URL, we don't want to overwrite the existing one.
+    // The form passes an empty string or the existing URL if no new file is selected.
+    // We only update if it's a new data URL.
+    if (updateData.photoURL && !updateData.photoURL.startsWith('data:image')) {
+      delete updateData.photoURL;
+    }
+
+    setDocumentNonBlocking(userDocRef, updateData, { merge: true });
     toast({
       title: 'Profile Updated',
       description: 'Your changes have been saved successfully.',

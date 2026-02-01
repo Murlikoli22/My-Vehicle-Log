@@ -169,6 +169,19 @@
           "type": "string",
           "description": "The user's display name."
         },
+        "phone": {
+          "type": "string",
+          "description": "The user's phone number."
+        },
+        "address": {
+          "type": "string",
+          "description": "The user's mailing address."
+        },
+        "photoURL": {
+          "type": "string",
+          "description": "URL of the user's profile picture.",
+          "format": "uri"
+        },
         "emergencyContact": {
           "type": "object",
           "description": "The user's primary emergency contact.",
@@ -304,4 +317,3 @@
     "reasoning": "The Firestore structure is designed to ensure authorization independence, clarity, and scalability. It leverages path-based ownership for user-specific data and denormalization to avoid complex security rules with `get()` calls.\n\n*   **/users/{userId}**: Stores user profiles, including nested objects for emergency and medical information for fast retrieval. Authorization is based on the `request.auth.uid` matching the `{userId}`.\n*   **/users/{userId}/vehicles/{vehicleId}**: Stores vehicle data owned by a specific user. The `userId` is embedded in the path, making ownership clear and enabling simple security rules.\n*   **/users/{userId}/vehicles/{vehicleId}/documents/{documentId}**: Stores documents related to a specific vehicle. The path includes both `userId` and `vehicleId`, ensuring that only the owner of the vehicle can access these documents.\n*   **/users/{userId}/vehicles/{vehicleId}/maintenanceLogs/{maintenanceLogId}**: Stores maintenance logs for a specific vehicle, following the same ownership pattern as documents.\n\n**Authorization Independence (CRITICAL):** The structure avoids `get()` calls in security rules by embedding ownership information within the document paths. This enables atomic operations and simplifies security rule logic.  For example, to create a new document for a vehicle, the rule only needs to check that `request.auth.uid == userId` from the path.  It does not need to `get()` the vehicle document to verify ownership.\n\nThis updated structure removes the separate `emergencyContacts` collection and nests that information within the `user` document itself. This is a deliberate denormalization strategy to ensure that in an emergency scenario, all of a user's critical information can be retrieved with a single document read, which is faster and more efficient."
   }
 }
-    

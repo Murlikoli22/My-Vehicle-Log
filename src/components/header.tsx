@@ -1,3 +1,4 @@
+
 'use client';
 
 import Link from 'next/link';
@@ -12,6 +13,7 @@ import {
   LogOut,
   User,
   Wrench,
+  Milestone,
 } from 'lucide-react';
 import { signOut } from 'firebase/auth';
 import { doc } from 'firebase/firestore';
@@ -35,6 +37,7 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { AppLogo } from './app-logo';
 import { placeholderImages } from '@/lib/placeholder-images.json';
+import type { UserProfile } from '@/types';
 
 
 const navItems = [
@@ -42,10 +45,6 @@ const navItems = [
   { href: '/vehicles', label: 'Vehicles', icon: Car },
   { href: '/estimate-cost', label: 'Estimate Cost', icon: Calculator },
 ];
-
-interface UserProfile {
-  name: string;
-}
 
 export function Header() {
   const pathname = usePathname();
@@ -61,7 +60,7 @@ export function Header() {
 
   const { data: userProfile } = useDoc<UserProfile>(userDocRef);
 
-  const avatarImage = placeholderImages.find(img => img.id === 'user-avatar-1');
+  const avatarPlaceholder = placeholderImages.find(img => img.id === 'user-avatar-1');
 
   const handleLogout = async () => {
     await signOut(auth);
@@ -124,7 +123,7 @@ export function Header() {
           <DropdownMenuTrigger asChild>
             <Button variant="secondary" size="icon" className="rounded-full">
               <Avatar className="h-8 w-8">
-                <AvatarImage src={user?.photoURL || avatarImage?.imageUrl} data-ai-hint={avatarImage?.imageHint} alt={displayName} />
+                <AvatarImage src={userProfile?.photoURL || user?.photoURL || avatarPlaceholder?.imageUrl} data-ai-hint={avatarPlaceholder?.imageHint} alt={displayName} />
                 <AvatarFallback>{displayInitial}</AvatarFallback>
               </Avatar>
               <span className="sr-only">Toggle user menu</span>

@@ -1,10 +1,11 @@
 
 'use client';
 
+import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Camera } from 'lucide-react';
 
 import type { UserProfile } from '@/types';
 import { Button } from '@/components/ui/button';
@@ -18,10 +19,15 @@ import {
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
-import { Separator } from './ui/separator';
+import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
+import { placeholderImages } from '@/lib/placeholder-images.json';
+import { Textarea } from './ui/textarea';
 
 const profileFormSchema = z.object({
   name: z.string().min(2, 'Name must be at least 2 characters.'),
+  phone: z.string().optional(),
+  address: z.string().optional(),
+  image: z.instanceof(File).optional(),
   emergencyContact: z.object({
     name: z.string().optional(),
     phone: z.string().optional(),
@@ -38,14 +44,19 @@ type FormValues = z.infer<typeof profileFormSchema>;
 
 interface ProfileFormProps {
   userProfile: UserProfile;
-  onSubmit: (values: FormValues) => Promise<void>;
+  onSubmit: (values: Partial<UserProfile>) => Promise<void>;
 }
 
 export function ProfileForm({ userProfile, onSubmit }: ProfileFormProps) {
+  const [avatarPreview, setAvatarPreview] = useState<string | null>(userProfile.photoURL || null);
+  const avatarPlaceholder = placeholderImages.find(p => p.id === 'user-avatar-1');
+
   const form = useForm<FormValues>({
     resolver: zodResolver(profileFormSchema),
     defaultValues: {
       name: userProfile.name || '',
+      phone: userProfile.phone || '',
+      address: userProfile.address || '',
       emergencyContact: {
         name: userProfile.emergencyContact?.name || '',
         phone: userProfile.emergencyContact?.phone || '',
@@ -61,14 +72,79 @@ export function ProfileForm({ userProfile, onSubmit }: ProfileFormProps) {
 
   const { isSubmitting } = form.formState;
 
+  const handleFormSubmit = async (data: FormValues) => {
+    const { image, ...rest } = data;
+    let photoURL: string | undefined = undefined;
+  
+    if (image) {
+      photoURL = await new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = e => resolve(e.target?.result as string);
+        reader.onerror = error => reject(error);
+        reader.readAsDataURL(image);
+      });
+    }
+  
+    await onSubmit({ ...rest, photoURL: photoURL || userProfile.photoURL });
+  };
+  
+  const handleImageChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      form.setValue('image', file);
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        setAvatarPreview(e.target?.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+      <form onSubmit={form.handleSubmit(handleFormSubmit)} className="space-y-8">
+        <Card>
+            <CardHeader>
+                <CardTitle>Profile Picture</CardTitle>
+            </CardHeader>
+            <CardContent className="flex items-center gap-6">
+                <Avatar className="h-20 w-20">
+                    <AvatarImage src={avatarPreview || avatarPlaceholder?.imageUrl} alt={userProfile.name} data-ai-hint={avatarPlaceholder?.imageHint} />
+                    <AvatarFallback>{userProfile.name?.charAt(0).toUpperCase()}</AvatarFallback>
+                </Avatar>
+                <FormField
+                  control={form.control}
+                  name="image"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel
+                        htmlFor="photo-upload"
+                        className="cursor-pointer inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-10 px-4 py-2"
+                      >
+                        <Camera className="mr-2 h-4 w-4" />
+                        Upload Photo
+                      </FormLabel>
+                      <FormControl>
+                        <Input
+                          id="photo-upload"
+                          type="file"
+                          accept="image/*"
+                          className="hidden"
+                          onChange={handleImageChange}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+            </CardContent>
+        </Card>
+        
         <Card>
           <CardHeader>
             <CardTitle>Personal Information</CardTitle>
           </CardHeader>
-          <CardContent>
+          <CardContent className="space-y-4">
             <FormField
               control={form.control}
               name="name"
@@ -77,6 +153,39 @@ export function ProfileForm({ userProfile, onSubmit }: ProfileFormProps) {
                   <FormLabel>Full Name</FormLabel>
                   <FormControl>
                     <Input placeholder="Your full name" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormItem>
+                <FormLabel>Email</FormLabel>
+                <FormControl>
+                    <Input readOnly disabled value={userProfile.email} />
+                </FormControl>
+                <FormDescription>Your email address cannot be changed.</FormDescription>
+            </FormItem>
+            <FormField
+              control={form.control}
+              name="phone"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Phone Number</FormLabel>
+                  <FormControl>
+                    <Input placeholder="Your phone number" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+             <FormField
+              control={form.control}
+              name="address"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Address</FormLabel>
+                  <FormControl>
+                    <Textarea placeholder="Your mailing address" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
