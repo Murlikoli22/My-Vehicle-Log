@@ -66,25 +66,22 @@ export default function MapsPage() {
     if (!location) return;
 
     const { latitude, longitude } = location;
-
-    if (mapType === 'street') {
-      const delta = 0.01;
-      const bbox = `${longitude - delta},${latitude - delta},${longitude + delta},${latitude + delta}`;
-      setMapUrl(`https://www.openstreetmap.org/export/embed.html?bbox=${bbox}&layer=mapnik&marker=${latitude},${longitude}`);
-    } else { // satellite
-      setMapUrl(`https://www.bing.com/maps/embed?cp=${latitude}~${longitude}&lvl=16&sty=h&sp=point.${latitude}_${longitude}_Your%20Location`);
-    }
+    
+    // `t=m` for road map, `t=k` for satellite
+    const mapTypeCode = mapType === 'street' ? 'm' : 'k';
+    
+    const googleMapUrl = `https://maps.google.com/maps?q=${latitude},${longitude}&t=${mapTypeCode}&z=15&ie=UTF8&iwloc=&output=embed`;
+    setMapUrl(googleMapUrl);
 
   }, [location, mapType, isShowingDirections]);
 
   const handleGetDirections = () => {
     if (!destination) {
-      alert("Please enter a destination.");
       return;
     }
     const origin = start || (location ? `${location.latitude},${location.longitude}` : '');
-    const bingDirectionsUrl = `https://www.bing.com/maps/embed?rtp=adr.${encodeURIComponent(origin)}~adr.${encodeURIComponent(destination)}`;
-    setMapUrl(bingDirectionsUrl);
+    const googleDirectionsUrl = `https://maps.google.com/maps?saddr=${encodeURIComponent(origin)}&daddr=${encodeURIComponent(destination)}&output=embed`;
+    setMapUrl(googleDirectionsUrl);
     setIsShowingDirections(true);
   };
 
@@ -120,7 +117,7 @@ export default function MapsPage() {
                 />
             </div>
             <div className="md:col-span-2 flex flex-col sm:flex-row gap-2">
-                <Button onClick={handleGetDirections} className="w-full">
+                <Button onClick={handleGetDirections} className="w-full" disabled={!destination}>
                     <Navigation className="mr-2 h-4 w-4" />
                     Get Directions
                 </Button>
