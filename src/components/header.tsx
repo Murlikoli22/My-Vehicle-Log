@@ -10,6 +10,7 @@ import {
   LogOut,
   User,
   Wrench,
+  Map,
 } from 'lucide-react';
 import { signOut } from 'firebase/auth';
 import { doc } from 'firebase/firestore';
@@ -34,6 +35,7 @@ import type { UserProfile } from '@/types';
 const navItems = [
   { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { href: '/vehicles', label: 'Vehicles', icon: Car },
+  { href: '/maps', label: 'Map', icon: Map },
 ];
 
 export function Header() {
