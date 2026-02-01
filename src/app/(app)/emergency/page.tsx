@@ -13,12 +13,12 @@ import { CardDescription } from '@/components/ui/card';
 interface UserProfile {
   name: string;
   email: string;
-  emergencyContact: {
+  emergencyContact?: {
     name: string;
     phone: string;
     relation: string;
   };
-  medicalInfo: {
+  medicalInfo?: {
     bloodType: string;
     allergies: string;
     conditions: string;
@@ -108,13 +108,13 @@ export default function EmergencyPage() {
             </CardHeader>
             <CardContent className="space-y-2 text-lg">
               <p>
-                <strong>Name:</strong> {userProfile.emergencyContact.name || 'N/A'}
+                <strong>Name:</strong> {userProfile.emergencyContact?.name || 'N/A'}
               </p>
               <p>
-                <strong>Phone:</strong> <a href={`tel:${userProfile.emergencyContact.phone}`} className="text-primary underline">{userProfile.emergencyContact.phone || 'N/A'}</a>
+                <strong>Phone:</strong> <a href={`tel:${userProfile.emergencyContact?.phone}`} className="text-primary underline">{userProfile.emergencyContact?.phone || 'N/A'}</a>
               </p>
               <p>
-                <strong>Relation:</strong> {userProfile.emergencyContact.relation || 'N/A'}
+                <strong>Relation:</strong> {userProfile.emergencyContact?.relation || 'N/A'}
               </p>
             </CardContent>
           </Card>
@@ -125,13 +125,13 @@ export default function EmergencyPage() {
             </CardHeader>
             <CardContent className="space-y-2 text-lg">
               <p>
-                <strong>Blood Type:</strong> <span className="font-bold text-destructive">{userProfile.medicalInfo.bloodType || 'N/A'}</span>
+                <strong>Blood Type:</strong> <span className="font-bold text-destructive">{userProfile.medicalInfo?.bloodType || 'N/A'}</span>
               </p>
               <p>
-                <strong>Allergies:</strong> {userProfile.medicalInfo.allergies || 'N/A'}
+                <strong>Allergies:</strong> {userProfile.medicalInfo?.allergies || 'N/A'}
               </p>
               <p>
-                <strong>Conditions:</strong> {userProfile.medicalInfo.conditions || 'N/A'}
+                <strong>Conditions:</strong> {userProfile.medicalInfo?.conditions || 'N/A'}
               </p>
             </CardContent>
           </Card>
@@ -151,4 +151,3 @@ export default function EmergencyPage() {
     </div>
   );
 }
-    
