@@ -10,6 +10,7 @@ import {
   Fuel,
 } from 'lucide-react';
 import { collection, query, onSnapshot, orderBy } from 'firebase/firestore';
+import { format, parseISO } from 'date-fns';
 
 import { useUser, useFirestore, useCollection, useMemoFirebase } from '@/firebase';
 import { Button } from '@/components/ui/button';
@@ -305,7 +306,7 @@ export default function DashboardPage() {
                                     <span>{reminder.title}</span>
                                 </div>
                             </TableCell>
-                            <TableCell className="text-right">{new Date(reminder.dueDate).toLocaleDateString()}</TableCell>
+                            <TableCell className="text-right">{format(parseISO(reminder.dueDate), 'dd-MM-yyyy')}</TableCell>
                           </TableRow>
                         );
                       })}

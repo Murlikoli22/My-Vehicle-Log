@@ -448,7 +448,7 @@ export function VehicleManagement({
                          <TableCell>
                             {documentItem.expiryDate ? (
                                 <Badge variant={isExpired(documentItem.expiryDate) ? "destructive" : "secondary"}>
-                                    Expires {format(parseISO(documentItem.expiryDate), "dd MMM yyyy")}
+                                    Expires {format(parseISO(documentItem.expiryDate), 'dd-MM-yyyy')}
                                 </Badge>
                             ) : (
                                 <span className="text-muted-foreground">-</span>
@@ -539,7 +539,7 @@ export function VehicleManagement({
                   <TableBody>
                     {getVehicleMaintenance(selectedVehicle.id).map(record => (
                        <TableRow key={record.id}>
-                         <TableCell>{format(parseISO(record.date), "dd MMM yyyy")}</TableCell>
+                         <TableCell>{format(parseISO(record.date), "dd-MM-yyyy")}</TableCell>
                          <TableCell className="font-medium">{record.serviceType}</TableCell>
                          <TableCell>{record.odometerReading.toLocaleString()} km</TableCell>
                          <TableCell>{record.mechanicDetails}</TableCell>
