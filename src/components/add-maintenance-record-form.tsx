@@ -87,7 +87,7 @@ export function AddMaintenanceRecordForm({ onSubmit }: AddMaintenanceRecordFormP
           render={({ field }) => (
             <FormItem className="flex flex-col">
               <FormLabel>Date of Service</FormLabel>
-              <Popover>
+              <Popover modal={true}>
                 <PopoverTrigger asChild>
                   <FormControl>
                     <Button

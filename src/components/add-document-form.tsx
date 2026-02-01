@@ -106,7 +106,7 @@ export function AddDocumentForm({ onSubmit }: AddDocumentFormProps) {
           render={({ field }) => (
             <FormItem className="flex flex-col">
               <FormLabel>Expiry Date (Optional)</FormLabel>
-              <Popover>
+              <Popover modal={true}>
                 <PopoverTrigger asChild>
                   <FormControl>
                     <Button
