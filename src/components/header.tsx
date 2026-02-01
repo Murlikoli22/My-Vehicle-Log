@@ -6,7 +6,6 @@ import Image from 'next/image';
 import {
   Car,
   LayoutDashboard,
-  Menu,
   ShieldAlert,
   LogOut,
   User,
