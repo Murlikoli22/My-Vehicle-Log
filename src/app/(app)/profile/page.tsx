@@ -8,11 +8,13 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { ProfileForm } from '@/components/profile-form';
 import type { UserProfile } from '@/types';
+import { useRouter } from 'next/navigation';
 
 export default function ProfilePage() {
   const { user, isUserLoading } = useUser();
   const firestore = useFirestore();
   const { toast } = useToast();
+  const router = useRouter();
 
   const userDocRef = useMemoFirebase(() => {
     if (!user) return null;
@@ -21,23 +23,15 @@ export default function ProfilePage() {
 
   const { data: userProfile, isLoading: isProfileLoading } = useDoc<UserProfile>(userDocRef);
 
-  const handleProfileUpdate = async (values: Partial<UserProfile>) => {
+  const handleProfileUpdate = (values: Partial<UserProfile>) => {
     if (!userDocRef) return;
 
-    try {
-      await setDocumentNonBlocking(userDocRef, values, { merge: true });
-      toast({
-        title: 'Profile Updated',
-        description: 'Your changes have been saved successfully.',
-      });
-    } catch (error) {
-      console.error('Failed to update profile:', error);
-      toast({
-        variant: 'destructive',
-        title: 'Update Failed',
-        description: 'Could not save your changes. Please try again.',
-      });
-    }
+    setDocumentNonBlocking(userDocRef, values, { merge: true });
+    toast({
+      title: 'Profile Updated',
+      description: 'Your changes have been saved successfully.',
+    });
+    router.push('/dashboard');
   };
 
   const isLoading = isUserLoading || isProfileLoading;
