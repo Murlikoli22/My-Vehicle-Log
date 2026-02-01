@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
-import { MapPin, Navigation, Satellite, X } from 'lucide-react';
+import { MapPin, Navigation, Satellite } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -18,7 +18,6 @@ export default function MapsPage() {
   const [start, setStart] = useState('');
   const [destination, setDestination] = useState('');
   const [mapUrl, setMapUrl] = useState('');
-  const [isShowingDirections, setIsShowingDirections] = useState(false);
 
   useEffect(() => {
     let isMounted = true;
@@ -62,7 +61,6 @@ export default function MapsPage() {
   }, [isLoading]);
 
   useEffect(() => {
-    if (isShowingDirections) return;
     if (!location) return;
 
     const { latitude, longitude } = location;
@@ -73,21 +71,19 @@ export default function MapsPage() {
     const googleMapUrl = `https://maps.google.com/maps?q=${latitude},${longitude}&t=${mapTypeCode}&z=15&ie=UTF8&iwloc=&output=embed`;
     setMapUrl(googleMapUrl);
 
-  }, [location, mapType, isShowingDirections]);
+  }, [location, mapType]);
 
   const handleGetDirections = () => {
     if (!destination) {
       return;
     }
     const origin = start || (location ? `${location.latitude},${location.longitude}` : '');
-    const googleDirectionsUrl = `https://maps.google.com/maps?saddr=${encodeURIComponent(origin)}&daddr=${encodeURIComponent(destination)}&output=embed`;
-    setMapUrl(googleDirectionsUrl);
-    setIsShowingDirections(true);
+    const googleNavigationUrl = `https://www.google.com/maps/dir/?api=1&origin=${encodeURIComponent(origin)}&destination=${encodeURIComponent(destination)}&travelmode=driving`;
+    window.open(googleNavigationUrl, '_blank');
   };
 
   const handleMapTypeChange = (newMapType: MapType) => {
     setMapType(newMapType);
-    setIsShowingDirections(false);
   }
 
   return (
@@ -119,14 +115,8 @@ export default function MapsPage() {
             <div className="md:col-span-2 flex flex-col sm:flex-row gap-2">
                 <Button onClick={handleGetDirections} className="w-full" disabled={!destination}>
                     <Navigation className="mr-2 h-4 w-4" />
-                    Get Directions
+                    Get Directions & Navigate
                 </Button>
-                {isShowingDirections && (
-                    <Button onClick={() => setIsShowingDirections(false)} variant="secondary" className="w-full">
-                        <X className="mr-2 h-4 w-4" />
-                        Clear Route
-                    </Button>
-                )}
             </div>
         </div>
 
@@ -134,14 +124,14 @@ export default function MapsPage() {
             <Label>Map Type</Label>
             <div className="flex items-center gap-2">
                 <Button 
-                    variant={mapType === 'street' && !isShowingDirections ? 'default' : 'outline'}
+                    variant={mapType === 'street' ? 'default' : 'outline'}
                     onClick={() => handleMapTypeChange('street')}
                 >
                     <MapPin className="mr-2 h-4 w-4" />
                     Street
                 </Button>
                 <Button 
-                    variant={mapType === 'satellite' && !isShowingDirections ? 'default' : 'outline'}
+                    variant={mapType === 'satellite' ? 'default' : 'outline'}
                     onClick={() => handleMapTypeChange('satellite')}
                 >
                     <Satellite className="mr-2 h-4 w-4" />
