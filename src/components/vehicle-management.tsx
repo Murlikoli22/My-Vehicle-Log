@@ -13,6 +13,7 @@ import {
   MoreVertical,
   Download,
   Trash2,
+  Eye,
 } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
 
@@ -374,11 +375,18 @@ export function VehicleManagement({
                          </TableCell>
                          <TableCell className="text-right">
                            {doc.fileUrl && (
-                            <Button variant="ghost" size="icon" asChild>
-                              <a href={doc.fileUrl} target="_blank" rel="noopener noreferrer">
-                                <Download className="h-4 w-4" />
-                              </a>
-                            </Button>
+                            <div className="flex items-center justify-end gap-1">
+                                <Button variant="ghost" size="icon" asChild>
+                                  <a href={doc.fileUrl} target="_blank" rel="noopener noreferrer" title="View document">
+                                    <Eye className="h-4 w-4" />
+                                  </a>
+                                </Button>
+                                <Button variant="ghost" size="icon" asChild>
+                                  <a href={doc.fileUrl} download={`Doc_${doc.documentType.replace(/\s/g, '_')}_${selectedVehicle.registrationNumber}`} title="Download document">
+                                    <Download className="h-4 w-4" />
+                                  </a>
+                                </Button>
+                            </div>
                            )}
                          </TableCell>
                        </TableRow>
@@ -435,11 +443,18 @@ export function VehicleManagement({
                          <TableCell className="text-right font-mono">{new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR' }).format(record.cost)}</TableCell>
                          <TableCell className="text-right">
                             {record.billUrl && (
-                                <Button variant="ghost" size="icon" asChild>
-                                    <a href={record.billUrl} target="_blank" rel="noopener noreferrer">
-                                        <Download className="h-4 w-4" />
-                                    </a>
-                                </Button>
+                                <div className="flex items-center justify-end gap-1">
+                                    <Button variant="ghost" size="icon" asChild>
+                                        <a href={record.billUrl} target="_blank" rel="noopener noreferrer" title="View bill">
+                                            <Eye className="h-4 w-4" />
+                                        </a>
+                                    </Button>
+                                    <Button variant="ghost" size="icon" asChild>
+                                        <a href={record.billUrl} download={`Bill_${record.serviceType.replace(/\s/g, '_')}_${format(parseISO(record.date), "yyyy-MM-dd")}`} title="Download bill">
+                                            <Download className="h-4 w-4" />
+                                        </a>
+                                    </Button>
+                                </div>
                             )}
                          </TableCell>
                        </TableRow>
