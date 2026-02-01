@@ -36,6 +36,15 @@ export default function RegisterPage() {
   const { toast } = useToast();
   const { user: authUser } = useUser();
 
+  const form = useForm<FormValues>({
+    resolver: zodResolver(formSchema),
+    defaultValues: {
+      fullName: '',
+      email: '',
+      password: '',
+    },
+  });
+
   useEffect(() => {
     if (authUser) {
       router.push('/dashboard');
@@ -45,15 +54,6 @@ export default function RegisterPage() {
   if (authUser) {
     return null;
   }
-
-  const form = useForm<FormValues>({
-    resolver: zodResolver(formSchema),
-    defaultValues: {
-      fullName: '',
-      email: '',
-      password: '',
-    },
-  });
 
   const onSubmit = async (values: FormValues) => {
     setIsLoading(true);
