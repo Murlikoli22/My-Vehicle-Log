@@ -123,12 +123,20 @@ export function VehicleManagement({
 
   const handleAddDocument = async (values: Partial<Omit<VehicleDocument, 'id' | 'vehicleId' | 'uploadDate'>>) => {
     if (!user || !selectedVehicle) return;
-    const newDocumentData = {
+    const newDocumentData: { [key: string]: any } = {
       ...values,
       vehicleId: selectedVehicle.id,
       uploadDate: new Date().toISOString(),
       expiryDate: values.expiryDate ? (values.expiryDate as Date).toISOString() : undefined,
     };
+
+    // Filter out undefined values before sending to Firestore
+    Object.keys(newDocumentData).forEach(key => {
+        if (newDocumentData[key] === undefined) {
+            delete newDocumentData[key];
+        }
+    });
+
     const documentsCollection = collection(firestore, 'users', user.uid, 'vehicles', selectedVehicle.id, 'documents');
     await addDocumentNonBlocking(documentsCollection, newDocumentData);
     setAddDocOpen(false);
@@ -136,11 +144,19 @@ export function VehicleManagement({
   
   const handleAddMaintenance = async (values: Partial<Omit<MaintenanceRecord, 'id' | 'vehicleId'>>) => {
     if (!user || !selectedVehicle) return;
-    const newMaintenanceData = {
+    const newMaintenanceData: { [key: string]: any } = {
       ...values,
       vehicleId: selectedVehicle.id,
       date: (values.date as Date).toISOString(),
     };
+
+    // Filter out undefined values before sending to Firestore
+    Object.keys(newMaintenanceData).forEach(key => {
+        if (newMaintenanceData[key] === undefined) {
+            delete newMaintenanceData[key];
+        }
+    });
+
     const maintenanceCollection = collection(firestore, 'users', user.uid, 'vehicles', selectedVehicle.id, 'maintenanceLogs');
     await addDocumentNonBlocking(maintenanceCollection, newMaintenanceData);
     setAddMaintOpen(false);
