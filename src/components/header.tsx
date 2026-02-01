@@ -26,11 +26,6 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import {
-  Sheet,
-  SheetContent,
-  SheetTrigger,
-} from '@/components/ui/sheet';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { AppLogo } from './app-logo';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
@@ -86,30 +81,20 @@ export function Header() {
 
   return (
     <header className="sticky top-0 z-30 flex h-16 items-center gap-4 border-b bg-card px-4 md:px-6">
-      <nav className="hidden flex-col gap-6 text-lg font-medium md:flex md:flex-row md:items-center md:gap-5 md:text-sm lg:gap-6">
-        <Link href="/dashboard" className="flex items-center gap-2 text-lg font-semibold md:text-base">
+      <div className="flex items-center gap-4">
+        <nav className="hidden flex-col gap-6 text-lg font-medium md:flex md:flex-row md:items-center md:gap-5 md:text-sm lg:gap-6">
+          <Link href="/dashboard" className="flex items-center gap-2 text-lg font-semibold md:text-base">
+            <AppLogo />
+          </Link>
+          {navLinks}
+        </nav>
+        <div className="md:hidden">
           <AppLogo />
-        </Link>
-        {navLinks}
-      </nav>
-      <Sheet>
-        <SheetTrigger asChild>
-          <Button variant="outline" size="icon" className="shrink-0 md:hidden">
-            <Menu className="h-5 w-5" />
-            <span className="sr-only">Toggle navigation menu</span>
-          </Button>
-        </SheetTrigger>
-        <SheetContent side="left">
-          <nav className="grid gap-6 text-lg font-medium">
-            <Link href="/dashboard" className="flex items-center gap-2 text-lg font-semibold">
-              <AppLogo />
-            </Link>
-            {navLinks}
-          </nav>
-        </SheetContent>
-      </Sheet>
-      <div className="flex w-full items-center justify-end gap-4 md:ml-auto md:gap-2 lg:gap-4">
-        <Button asChild variant="ghost" className="bg-accent/20 text-accent-foreground hover:bg-accent/30">
+        </div>
+      </div>
+
+      <div className="flex w-full items-center justify-end gap-4 md:gap-2 lg:gap-4">
+        <Button asChild variant="ghost" className="bg-accent/20 text-accent-foreground hover:bg-accent/30 hidden md:inline-flex">
           <Link href="/emergency" className="flex items-center gap-2">
             <ShieldAlert className="h-5 w-5 text-accent" />
             <span className="hidden sm:inline">Emergency</span>

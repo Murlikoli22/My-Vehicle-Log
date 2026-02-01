@@ -23,6 +23,7 @@ import {
 import { Skeleton } from '@/components/ui/skeleton';
 
 const colorThemes = [
+    { name: 'Indigo', value: 'theme-indigo' },
     { name: 'Green', value: 'theme-green' },
     { name: 'Blue', value: 'theme-blue' },
     { name: 'Rose', value: 'theme-rose' },
@@ -34,11 +35,11 @@ export default function SettingsPage() {
   
   // The color theme is managed separately from light/dark mode.
   // We use localStorage to persist it and apply a class to the html element.
-  const [colorTheme, setColorTheme] = React.useState('theme-green');
+  const [colorTheme, setColorTheme] = React.useState('theme-indigo');
 
   React.useEffect(() => {
     setMounted(true);
-    const savedTheme = localStorage.getItem('color-theme') || 'theme-green';
+    const savedTheme = localStorage.getItem('color-theme') || 'theme-indigo';
     setColorTheme(savedTheme);
     document.documentElement.classList.remove(...colorThemes.map(t => t.value));
     document.documentElement.classList.add(savedTheme);
