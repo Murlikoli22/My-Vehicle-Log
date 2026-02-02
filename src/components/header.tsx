@@ -36,6 +36,7 @@ const navItems = [
   { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { href: '/vehicles', label: 'Vehicles', icon: Car },
   { href: '/estimate-cost', label: 'Estimate Cost', icon: Calculator },
+  { href: '/maps', label: 'Map', icon: Map },
 ];
 
 export function Header() {
