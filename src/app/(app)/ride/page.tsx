@@ -1,8 +1,8 @@
 'use client';
 
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
-import { Play, Pause, Square, Trash2, Map, List, X, History, ArrowRight, Bike, MapPin } from 'lucide-react';
-import { collection, query, orderBy, onSnapshot, doc, deleteDoc, writeBatch } from 'firebase/firestore';
+import { Play, Pause, Square, Trash2, Map, List, X, History, ArrowRight, Bike, MapPin, Layers } from 'lucide-react';
+import { collection, query, orderBy, onSnapshot, doc, deleteDoc, writeBatch, getDocs } from 'firebase/firestore';
 import { useUser, useFirestore, addDocumentNonBlocking, useMemoFirebase } from '@/firebase';
 import type { Ride, GeoPoint } from '@/types';
 import { useToast } from '@/hooks/use-toast';
@@ -17,6 +17,11 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import dynamic from 'next/dynamic';
 
 const RideRouteMap = dynamic(() => import('@/components/ride-route-map'), {
+  ssr: false,
+  loading: () => <div className="h-full w-full bg-muted flex items-center justify-center"><p>Loading map...</p></div>,
+});
+
+const AllRidesMap = dynamic(() => import('@/components/all-rides-map'), {
   ssr: false,
   loading: () => <div className="h-full w-full bg-muted flex items-center justify-center"><p>Loading map...</p></div>,
 });
@@ -65,7 +70,7 @@ export default function RideTrackingPage() {
   const firestore = useFirestore();
   const { toast } = useToast();
 
-  const [activeTab, setActiveTab] = useState<'track' | 'history'>('track');
+  const [activeTab, setActiveTab] = useState<'track' | 'history' | 'map'>('history');
   const [status, setStatus] = useState<RideStatus>('idle');
   
   const [elapsedTime, setElapsedTime] = useState(0);
@@ -278,16 +283,11 @@ export default function RideTrackingPage() {
     if (!user || !ridesQuery) return;
     try {
       const batch = writeBatch(firestore);
-      const snapshot = await onSnapshot(ridesQuery, (snap) => {
-        snap.docs.forEach((doc) => batch.delete(doc.ref));
-      });
-      // This is a workaround since getDocs is not available
-      // It might not be perfect but for a small collection it should work
-      setTimeout(async () => {
-        await batch.commit();
-        toast({ title: 'History Cleared', description: 'All rides have been deleted.' });
-        setSelectedRide(null);
-      }, 500);
+      const snapshot = await getDocs(ridesQuery);
+      snapshot.docs.forEach((doc) => batch.delete(doc.ref));
+      await batch.commit();
+      toast({ title: 'History Cleared', description: 'All rides have been deleted.' });
+      setSelectedRide(null);
     } catch (error) {
       toast({ variant: "destructive", title: 'Error', description: 'Could not clear history.' });
     }
@@ -296,6 +296,17 @@ export default function RideTrackingPage() {
 
   // --- Render ---
   const avgPace = useMemo(() => formatPace(elapsedTime, distance), [elapsedTime, distance]);
+
+  const renderMap = () => (
+    <div className="p-4 md:p-6 h-full flex flex-col">
+        <h2 className="text-2xl font-bold flex items-center gap-2 mb-4"><Layers /> All Routes</h2>
+        <Card className="flex-1">
+            <CardContent className="p-0 h-full">
+                <AllRidesMap rides={ridesHistory} />
+            </CardContent>
+        </Card>
+    </div>
+  );
 
   const renderHistory = () => (
     <div className="p-4 md:p-6 h-full flex flex-col">
@@ -428,11 +439,12 @@ export default function RideTrackingPage() {
     <div className="h-full flex flex-col">
        <div className="flex-shrink-0 p-4 pb-0 md:p-6 md:pb-0">
          <div className="bg-muted p-1 rounded-lg flex max-w-min mx-auto">
-            <Button onClick={() => setActiveTab('track')} variant={activeTab === 'track' ? 'default' : 'ghost'} size="sm" className="gap-2"><Map />Track</Button>
             <Button onClick={() => setActiveTab('history')} variant={activeTab === 'history' ? 'default' : 'ghost'} size="sm" className="gap-2"><List />History</Button>
+            <Button onClick={() => setActiveTab('track')} variant={activeTab === 'track' ? 'default' : 'ghost'} size="sm" className="gap-2"><Map />Track</Button>
+            <Button onClick={() => setActiveTab('map')} variant={activeTab === 'map' ? 'default' : 'ghost'} size="sm" className="gap-2"><Layers />Map</Button>
          </div>
        </div>
-        {activeTab === 'track' ? renderTracker() : renderHistory()}
+        {activeTab === 'track' ? renderTracker() : activeTab === 'history' ? renderHistory() : renderMap()}
     </div>
   );
 }
