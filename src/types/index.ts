@@ -60,3 +60,19 @@ export type UserProfile = {
     conditions: string;
   };
 };
+
+export type GeoPoint = {
+  latitude: number;
+  longitude: number;
+};
+
+export type Ride = {
+  id: string;
+  userId: string;
+  startTime: string; // ISO string
+  endTime: string; // ISO string
+  duration: number; // in seconds
+  distance: number; // in km
+  averageSpeed: number; // in km/h
+  route: GeoPoint[];
+};

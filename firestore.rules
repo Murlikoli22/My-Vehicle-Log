@@ -179,7 +179,21 @@ service cloud.firestore {
           allow delete: if isExistingOwner(userId);
         }
       }
+
+      /**
+       * @description Controls access to a user's recorded rides.
+       * @path /users/{userId}/rides/{rideId}
+       * @allow (create) The user can save a new ride to their own profile.
+       * @deny (get) User 'A' cannot read a ride belonging to User 'B'.
+       * @principle Enforces document ownership for all operations based on the path.
+       */
+      match /rides/{rideId} {
+        allow get: if isOwner(userId);
+        allow list: if isOwner(userId);
+        allow create: if isOwner(userId) && hasCorrectOwnerIdOnCreate(userId);
+        allow update: if isExistingOwner(userId) && isUserIdImmutable();
+        allow delete: if isExistingOwner(userId);
+      }
     }
   }
 }
-    
