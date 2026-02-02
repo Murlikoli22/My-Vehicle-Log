@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState } from 'react';
@@ -72,18 +73,25 @@ export function ProfileForm({ userProfile, onSubmit }: ProfileFormProps) {
 
   const handleFormSubmit = async (data: FormValues) => {
     const { image, ...rest } = data;
-    let photoURL: string | undefined = undefined;
+    const payload: Partial<UserProfile> = { ...rest };
   
     if (image) {
-      photoURL = await new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = e => resolve(e.target?.result as string);
-        reader.onerror = error => reject(error);
-        reader.readAsDataURL(image);
-      });
+      try {
+        const photoURL: string = await new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = e => resolve(e.target?.result as string);
+          reader.onerror = error => reject(error);
+          reader.readAsDataURL(image);
+        });
+        payload.photoURL = photoURL;
+      } catch (error) {
+        console.error("Error converting file to data URL", error);
+        form.setError('image', { type: 'manual', message: 'Could not upload file.' });
+        return;
+      }
     }
   
-    await onSubmit({ ...rest, photoURL: photoURL || userProfile.photoURL });
+    await onSubmit(payload);
   };
   
   const handleImageChange = (event: React.ChangeEvent<HTMLInputElement>) => {
