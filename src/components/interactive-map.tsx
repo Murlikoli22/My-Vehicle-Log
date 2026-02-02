@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo, useCallback } from 'react';
+import { useState, useMemo, useCallback, useEffect } from 'react';
 import {
   MapContainer,
   TileLayer,
@@ -11,13 +11,15 @@ import {
   useMap,
   useMapEvents,
 } from 'react-leaflet';
-import L, { LatLngExpression } from 'leaflet';
+import L, { LatLngExpression, LatLng } from 'leaflet';
 import { Input } from './ui/input';
 import { Button } from './ui/button';
 import { Card, CardContent, CardHeader } from './ui/card';
-import { Search, Route, X, Loader2, Clock, Waypoints, MapPin } from 'lucide-react';
+import { Search, Route, X, Loader2, LocateFixed, Navigation, MapPin } from 'lucide-react';
 import { ScrollArea } from './ui/scroll-area';
 import { Separator } from './ui/separator';
+import { useToast } from '@/hooks/use-toast';
+
 
 // Fix for default icon path issue with webpack
 import icon from 'leaflet/dist/images/marker-icon.png';
@@ -50,6 +52,14 @@ const endIcon = L.icon({
   popupAnchor: [1, -34],
   shadowSize: [41, 41],
 });
+
+const myLocationIcon = L.divIcon({
+    html: `<div class="pulsing-dot"></div>`,
+    className: '', // important to override default background
+    iconSize: [16, 16],
+    iconAnchor: [8, 8],
+});
+
 
 // Polyline decoder from OSRM
 function decodePolyline(encoded: string) {
@@ -86,11 +96,56 @@ type Point = { lat: number; lon: number; name: string };
 type SearchResult = { lat: string; lon: string; display_name: string };
 type RouteSummary = { distance: number; duration: number };
 
-function MapEventsHandler({ setStart, setEnd }: { setStart: (p: Point) => void; setEnd: (p: Point) => void }) {
+function MapController({
+    setStart,
+    setEnd,
+    isLocating,
+    setMyLocation,
+    addLiveRoutePoint,
+    setLocationError,
+    autoCenter,
+    setAutoCenter,
+}: {
+    setStart: (p: Point) => void;
+    setEnd: (p: Point) => void;
+    isLocating: boolean;
+    setMyLocation: (l: LatLng) => void;
+    addLiveRoutePoint: (l: LatLng) => void;
+    setLocationError: (e: string | null) => void;
+    autoCenter: boolean;
+    setAutoCenter: (val: boolean) => void;
+}) {
+  const map = useMap();
+
+  useEffect(() => {
+    if (isLocating) {
+      map.locate({ watch: true, setView: true, enableHighAccuracy: true, maxZoom: 16 });
+    } else {
+      map.stopLocate();
+    }
+  }, [isLocating, map]);
+  
   useMapEvents({
+    locationfound(e) {
+      setMyLocation(e.latlng);
+      addLiveRoutePoint(e.latlng);
+      if (autoCenter) {
+        map.flyTo(e.latlng, map.getZoom());
+      }
+      setLocationError(null);
+    },
+    locationerror(e) {
+        setLocationError(`Location Error: ${e.message}`);
+    },
+    dragstart() {
+        if(isLocating) {
+            setAutoCenter(false);
+        }
+    },
     click: async (e) => {
+      if (isLocating) return;
+
       const { lat, lng } = e.latlng;
-      const map = e.target;
       try {
         const response = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`);
         const data = await response.json();
@@ -139,6 +194,25 @@ export default function InteractiveMap() {
   const [routeSummary, setRouteSummary] = useState<RouteSummary | null>(null);
   const [isRouting, setIsRouting] = useState(false);
   const [selectedMarker, setSelectedMarker] = useState<Point | null>(null);
+  
+  const [isLocating, setIsLocating] = useState(false);
+  const [myLocation, setMyLocation] = useState<LatLng | null>(null);
+  const [liveRoute, setLiveRoute] = useState<LatLng[]>([]);
+  const [locationError, setLocationError] = useState<string | null>(null);
+  const [autoCenter, setAutoCenter] = useState(true);
+
+  const { toast } = useToast();
+
+  useEffect(() => {
+    if (locationError) {
+        toast({
+            variant: "destructive",
+            title: "Location Error",
+            description: locationError,
+        });
+    }
+  }, [locationError, toast]);
+  
 
   const handleSearch = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -162,6 +236,18 @@ export default function InteractiveMap() {
     setSearchResults([]);
     setSearchQuery('');
   };
+  
+  const handleToggleLocate = () => {
+    if (isLocating) {
+        setIsLocating(false);
+        setMyLocation(null);
+    } else {
+        clearRoute();
+        setLiveRoute([]);
+        setIsLocating(true);
+        setAutoCenter(true);
+    }
+  };
 
   const clearRoute = useCallback(() => {
     setStartPoint(null);
@@ -170,31 +256,38 @@ export default function InteractiveMap() {
     setRouteSummary(null);
   }, []);
   
-  useMemo(async () => {
+  const addLiveRoutePoint = useCallback((latlng: LatLng) => {
+    setLiveRoute(prevRoute => [...prevRoute, latlng]);
+  }, []);
+
+  useEffect(() => {
     if (startPoint && endPoint) {
       setIsRouting(true);
       setRoute([]);
       setRouteSummary(null);
-      try {
-        const response = await fetch(
-          `https://router.project-osrm.org/route/v1/driving/${startPoint.lon},${startPoint.lat};${endPoint.lon},${endPoint.lat}?overview=full&geometries=polyline`
-        );
-        const data = await response.json();
-        if (data.routes && data.routes[0]) {
-          const route = data.routes[0];
-          const decoded = decodePolyline(route.geometry);
-          setRoute(decoded);
-          setRouteSummary({ distance: route.distance, duration: route.duration });
-          if(map) {
-            const bounds = L.latLngBounds(decoded);
-            map.fitBounds(bounds, { padding: [50, 50] });
+      const fetchRoute = async () => {
+          try {
+            const response = await fetch(
+              `https://router.project-osrm.org/route/v1/driving/${startPoint.lon},${startPoint.lat};${endPoint.lon},${endPoint.lat}?overview=full&geometries=polyline`
+            );
+            const data = await response.json();
+            if (data.routes && data.routes[0]) {
+              const route = data.routes[0];
+              const decoded = decodePolyline(route.geometry);
+              setRoute(decoded);
+              setRouteSummary({ distance: route.distance, duration: route.duration });
+              if(map) {
+                const bounds = L.latLngBounds(decoded);
+                map.fitBounds(bounds, { padding: [50, 50] });
+              }
+            }
+          } catch (error) {
+            console.error('Routing failed:', error);
+          } finally {
+            setIsRouting(false);
           }
-        }
-      } catch (error) {
-        console.error('Routing failed:', error);
-      } finally {
-        setIsRouting(false);
-      }
+      };
+      fetchRoute();
     }
   }, [startPoint, endPoint, map]);
 
@@ -252,6 +345,16 @@ export default function InteractiveMap() {
           )}
         </CardContent>
       </Card>
+      <Button
+        size="icon"
+        onClick={handleToggleLocate}
+        className="absolute top-4 right-4 z-[1000] rounded-full h-12 w-12 shadow-lg"
+        variant={isLocating ? "default" : "secondary"}
+        aria-label="Toggle live location tracking"
+      >
+        {isLocating ? <Navigation className="h-6 w-6" /> : <LocateFixed className="h-6 w-6" />}
+      </Button>
+
       <MapContainer
         center={[20.5937, 78.9629]}
         zoom={5}
@@ -279,12 +382,25 @@ export default function InteractiveMap() {
           </LayersControl.BaseLayer>
         </LayersControl>
 
-        <MapEventsHandler setStart={setStartPoint} setEnd={setEndPoint} />
+        <MapController 
+            setStart={setStartPoint}
+            setEnd={setEndPoint}
+            isLocating={isLocating}
+            setMyLocation={setMyLocation}
+            addLiveRoutePoint={addLiveRoutePoint}
+            setLocationError={setLocationError}
+            autoCenter={autoCenter}
+            setAutoCenter={setAutoCenter}
+        />
         
         {selectedMarker && <Marker position={[selectedMarker.lat, selectedMarker.lon]}><Popup>{selectedMarker.name}</Popup></Marker>}
         {startPoint && <Marker position={[startPoint.lat, startPoint.lon]} icon={startIcon}><Popup><strong>Start:</strong> {startPoint.name}</Popup></Marker>}
         {endPoint && <Marker position={[endPoint.lat, endPoint.lon]} icon={endIcon}><Popup><strong>End:</strong> {endPoint.name}</Popup></Marker>}
-        {route.length > 0 && <Polyline positions={route} color="#FC4C02" weight={4} />}
+        {route.length > 0 && <Polyline positions={route} color="hsl(var(--primary))" weight={5} opacity={0.7} />}
+        
+        {isLocating && myLocation && <Marker position={myLocation} icon={myLocationIcon} />}
+        {isLocating && liveRoute.length > 1 && <Polyline positions={liveRoute} color="#FC4C02" weight={3} />}
+
       </MapContainer>
     </>
   );
