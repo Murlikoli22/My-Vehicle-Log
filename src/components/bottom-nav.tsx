@@ -2,13 +2,13 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { LayoutDashboard, Car, ShieldAlert, User, Map, Calculator } from 'lucide-react';
+import { LayoutDashboard, Car, ShieldAlert, User, Bike, Calculator } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const navItems = [
   { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { href: '/vehicles', label: 'Vehicles', icon: Car },
-  { href: '/maps', label: 'Map', icon: Map },
+  { href: '/ride', label: 'Ride', icon: Bike },
   { href: '/estimate-cost', label: 'Estimate', icon: Calculator },
   { href: '/emergency', label: 'Emergency', icon: ShieldAlert },
   { href: '/profile', label: 'Profile', icon: User },
