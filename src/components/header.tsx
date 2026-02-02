@@ -11,7 +11,7 @@ import {
   User,
   Wrench,
   Bike,
-  Calculator,
+  Map,
 } from 'lucide-react';
 import { signOut } from 'firebase/auth';
 import { doc } from 'firebase/firestore';
@@ -36,7 +36,7 @@ const navItems = [
   { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { href: '/vehicles', label: 'Vehicles', icon: Car },
   { href: '/ride', label: 'Ride', icon: Bike },
-  { href: '/estimate-cost', label: 'Estimate Cost', icon: Calculator },
+  { href: '/maps', label: 'Map', icon: Map },
 ];
 
 export function Header() {
