@@ -19,6 +19,7 @@ export default function EstimateCostPage() {
   const [fuelEfficiency, setFuelEfficiency] = useState('');
   const [fuelPrice, setFuelPrice] = useState('');
   const [estimatedCost, setEstimatedCost] = useState<number | null>(null);
+  const [estimatedFuel, setEstimatedFuel] = useState<number | null>(null);
   const [selectedVehicleId, setSelectedVehicleId] = useState<string>('');
 
   const vehiclesQuery = useMemoFirebase(() => {
@@ -38,9 +39,12 @@ export default function EstimateCostPage() {
     const price = parseFloat(fuelPrice);
 
     if (dist > 0 && eff > 0 && price > 0) {
-      const cost = (dist / eff) * price;
+      const fuel = dist / eff;
+      const cost = fuel * price;
+      setEstimatedFuel(fuel);
       setEstimatedCost(cost);
     } else {
+      setEstimatedFuel(null);
       setEstimatedCost(null);
     }
   };
@@ -119,13 +123,23 @@ export default function EstimateCostPage() {
           <Calculator className="mr-2 h-4 w-4" /> Calculate Estimated Cost
         </Button>
       </CardContent>
-      {estimatedCost !== null && (
+      {estimatedCost !== null && estimatedFuel !== null && (
         <CardFooter className="bg-muted/50 p-6 rounded-b-lg">
-          <div className="text-center w-full">
-            <p className="text-muted-foreground">Estimated Fuel Cost</p>
-            <p className="text-3xl font-bold">
-              {new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR' }).format(estimatedCost)}
-            </p>
+          <div className="flex justify-around text-center w-full items-center">
+            <div>
+              <p className="text-sm text-muted-foreground">Estimated Fuel</p>
+              <p className="text-3xl font-bold">
+                {estimatedFuel.toFixed(2)}
+                <span className="text-xl font-medium text-muted-foreground"> L</span>
+              </p>
+            </div>
+            <div className="h-16 w-px bg-border mx-4" />
+            <div>
+              <p className="text-sm text-muted-foreground">Estimated Cost</p>
+              <p className="text-3xl font-bold">
+                {new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR' }).format(estimatedCost)}
+              </p>
+            </div>
           </div>
         </CardFooter>
       )}
