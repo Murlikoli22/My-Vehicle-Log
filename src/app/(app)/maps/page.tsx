@@ -10,7 +10,7 @@ const InteractiveMap = dynamic(() => import('@/components/interactive-map'), {
 
 export default function MapsPage() {
   return (
-    <div className="h-full w-full relative pt-0 md:pt-0 p-0 md:p-0">
+    <div className="flex-1 w-full relative">
        <InteractiveMap />
     </div>
   );
