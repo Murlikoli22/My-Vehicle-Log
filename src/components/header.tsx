@@ -29,7 +29,6 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { AppLogo } from './app-logo';
-import { PlaceHolderImages } from '@/lib/placeholder-images';
 import type { UserProfile } from '@/types';
 
 
@@ -53,8 +52,6 @@ export function Header() {
   }, [firestore, user]);
 
   const { data: userProfile } = useDoc<UserProfile>(userDocRef);
-
-  const avatarPlaceholder = PlaceHolderImages.find(img => img.id === 'user-avatar-1');
 
   const handleLogout = async () => {
     await signOut(auth);
@@ -107,7 +104,7 @@ export function Header() {
           <DropdownMenuTrigger asChild>
             <Button variant="secondary" size="icon" className="rounded-full">
               <Avatar className="h-8 w-8">
-                <AvatarImage src={userProfile?.photoURL || user?.photoURL || avatarPlaceholder?.imageUrl} data-ai-hint={avatarPlaceholder?.imageHint} alt={displayName} />
+                <AvatarImage src={userProfile?.photoURL || user?.photoURL || undefined} alt={displayName} />
                 <AvatarFallback>{displayInitial}</AvatarFallback>
               </Avatar>
               <span className="sr-only">Toggle user menu</span>
