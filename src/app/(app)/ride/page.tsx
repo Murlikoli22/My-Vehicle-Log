@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
-import { Play, Pause, Square, Trash2, Map, List, X, History, ArrowRight } from 'lucide-react';
+import { Play, Pause, Square, Trash2, Map, List, X, History, ArrowRight, Bike, MapPin } from 'lucide-react';
 import { collection, query, orderBy, onSnapshot, doc, deleteDoc, writeBatch } from 'firebase/firestore';
 import { useUser, useFirestore, addDocumentNonBlocking, useMemoFirebase } from '@/firebase';
 import type { Ride, GeoPoint } from '@/types';
@@ -152,7 +152,7 @@ export default function RideTrackingPage() {
   useEffect(() => {
     const requestWakeLock = async () => {
       if ('wakeLock' in navigator) {
-        try { wakeLockRef.current = await navigator.wakeLock.request('screen'); } catch (err: any) { console.error(`Wake Lock Error: ${err.name}, ${err.message}`); }
+        try { wakeLockRef.current = await navigator.wakeLock.request('screen'); } catch (err: any) { console.error(`Wake Lock Error: ${'\'\''}${err.name}, ${err.message}${'\'\''}`); }
       }
     };
     const releaseWakeLock = async () => {
