@@ -2,19 +2,30 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import dynamic from 'next/dynamic';
-import { collection, query, orderBy } from 'firebase/firestore';
-import { Play, Pause, Square, Redo, Timer, Gauge, Milestone, MapPin, Satellite, Mountain, TrendingUp, History, Bike } from 'lucide-react';
+import { collection, query, orderBy, doc } from 'firebase/firestore';
+import { Play, Pause, Square, Redo, Timer, Gauge, Milestone, MapPin, Satellite, Mountain, TrendingUp, History, Bike, Trash2 } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
-import { useUser, useFirestore, addDocumentNonBlocking, useCollection, useMemoFirebase } from '@/firebase';
+import { useUser, useFirestore, addDocumentNonBlocking, useCollection, useMemoFirebase, deleteDocumentNonBlocking } from '@/firebase';
 import type { Ride, GeoPoint } from '@/types';
 import { useToast } from '@/hooks/use-toast';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
 
 const RideRouteMap = dynamic(() => import('@/components/ride-route-map'), {
   loading: () => <Skeleton className="h-full w-full" />,
@@ -78,6 +89,8 @@ export default function RidePage() {
   useEffect(() => {
     if (!selectedPastRide && pastRides && pastRides.length > 0) {
       setSelectedPastRide(pastRides[0]);
+    } else if (pastRides && pastRides.length === 0) {
+      setSelectedPastRide(null);
     }
   }, [pastRides, selectedPastRide]);
 
@@ -262,6 +275,37 @@ export default function RidePage() {
     startTimeRef.current = null;
   };
   
+  const handleDeleteRide = (rideId: string) => {
+    if (!user || !firestore) return;
+    const rideRef = doc(firestore, 'users', user.uid, 'rides', rideId);
+    deleteDocumentNonBlocking(rideRef);
+
+    if (selectedPastRide?.id === rideId) {
+      setSelectedPastRide(null);
+    }
+
+    toast({
+        title: "Ride Deleted",
+        description: "The selected ride has been removed from your history.",
+    });
+  };
+
+  const handleClearHistory = () => {
+    if (!user || !firestore || !pastRides) return;
+
+    pastRides.forEach(ride => {
+        const rideRef = doc(firestore, 'users', user.uid, 'rides', ride.id);
+        deleteDocumentNonBlocking(rideRef);
+    });
+
+    setSelectedPastRide(null);
+
+    toast({
+        title: "Ride History Cleared",
+        description: `All ${pastRides.length} rides have been deleted.`,
+    });
+  };
+
   return (
     <Tabs defaultValue="history" className="flex flex-col h-full">
         <div className="flex-shrink-0">
@@ -274,21 +318,65 @@ export default function RidePage() {
         <TabsContent value="history" className="flex-grow mt-4">
           <div className="grid md:grid-cols-[320px_1fr] gap-6 h-full">
             <div className="flex flex-col gap-4 h-full">
-              <h2 className="text-xl font-bold">Past Rides</h2>
+              <div className="flex items-center justify-between">
+                <h2 className="text-xl font-bold">Past Rides</h2>
+                 {pastRides && pastRides.length > 0 && (
+                    <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                            <Button variant="outline" size="sm" className="text-destructive hover:bg-destructive/10 hover:text-destructive">
+                                <Trash2 className="mr-2 h-4 w-4" /> Clear History
+                            </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                            <AlertDialogHeader>
+                                <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                    This action cannot be undone. This will permanently delete all {pastRides.length} of your saved rides.
+                                </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                <AlertDialogAction onClick={handleClearHistory} className="bg-destructive hover:bg-destructive/90">Delete All</AlertDialogAction>
+                            </AlertDialogFooter>
+                        </AlertDialogContent>
+                    </AlertDialog>
+                )}
+              </div>
               <ScrollArea className="flex-grow border rounded-lg">
                 <div className="flex flex-col gap-2 p-2">
                 {pastRidesLoading && Array.from({length: 4}).map((_, i) => <Skeleton key={i} className="h-20 w-full" />)}
                 {!pastRidesLoading && pastRides?.map(ride => (
-                  <button key={ride.id} onClick={() => setSelectedPastRide(ride)} className={cn(
-                    "flex items-center gap-4 rounded-lg p-3 text-left transition-colors w-full hover:bg-muted/50",
-                    selectedPastRide?.id === ride.id && 'bg-muted'
-                  )}>
-                    <div className="bg-muted rounded-md p-2"><Bike className="h-6 w-6 text-muted-foreground" /></div>
-                    <div className="flex-1 truncate">
-                      <p className="font-medium">{format(new Date(ride.startTime), 'MMMM dd, yyyy')}</p>
-                      <p className="text-sm text-muted-foreground">{ride.distance.toFixed(2)} km in {formatTime(ride.duration)}</p>
-                    </div>
-                  </button>
+                  <div key={ride.id} className="group/ride-item flex items-center gap-2 rounded-lg pr-2 text-left transition-colors hover:bg-muted/50 w-full">
+                    <button onClick={() => setSelectedPastRide(ride)} className={cn(
+                      "flex-1 flex items-center gap-4 rounded-lg p-3",
+                      selectedPastRide?.id === ride.id && 'bg-muted'
+                    )}>
+                      <div className="bg-muted rounded-md p-2"><Bike className="h-6 w-6 text-muted-foreground" /></div>
+                      <div className="flex-1 truncate">
+                        <p className="font-medium">{format(new Date(ride.startTime), 'MMMM dd, yyyy')}</p>
+                        <p className="text-sm text-muted-foreground">{ride.distance.toFixed(2)} km in {formatTime(ride.duration)}</p>
+                      </div>
+                    </button>
+                    <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                            <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0 opacity-0 group-hover/ride-item:opacity-100 text-destructive hover:text-destructive focus:opacity-100">
+                                <Trash2 className="h-4 w-4" />
+                            </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                            <AlertDialogHeader>
+                                <AlertDialogTitle>Delete this ride?</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                    This will permanently delete this ride record. This action cannot be undone.
+                                </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                <AlertDialogAction onClick={() => handleDeleteRide(ride.id)} className="bg-destructive hover:bg-destructive/90">Delete</AlertDialogAction>
+                            </AlertDialogFooter>
+                        </AlertDialogContent>
+                    </AlertDialog>
+                  </div>
                 ))}
                 {!pastRidesLoading && pastRides?.length === 0 && (
                     <div className="text-center text-muted-foreground p-8">No rides recorded yet.</div>
