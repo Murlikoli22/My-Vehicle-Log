@@ -64,6 +64,7 @@ export type UserProfile = {
 export type GeoPoint = {
   latitude: number;
   longitude: number;
+  altitude?: number | null;
 };
 
 export type Ride = {
@@ -75,4 +76,5 @@ export type Ride = {
   distance: number; // in km
   averageSpeed: number; // in km/h
   route: GeoPoint[];
+  elevationGain?: number;
 };

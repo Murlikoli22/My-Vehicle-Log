@@ -255,6 +255,10 @@
           "type": "number",
           "description": "Average speed of the ride in km/h."
         },
+        "elevationGain": {
+          "type": "number",
+          "description": "Total elevation gain during the ride in meters."
+        },
         "route": {
           "type": "array",
           "description": "An array of geographic points that make up the ride's route.",
@@ -266,6 +270,10 @@
               },
               "longitude": {
                 "type": "number"
+              },
+              "altitude": {
+                "type": "number",
+                "description": "The altitude at the point, in meters."
               }
             },
             "required": [

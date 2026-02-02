@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { collection } from 'firebase/firestore';
-import { Play, Pause, Square, Redo, Timer, Gauge, Milestone, MapPin, Satellite, Star } from 'lucide-react';
+import { Play, Pause, Square, Redo, Timer, Gauge, Milestone, MapPin, Satellite, Star, Mountain, TrendingUp } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -10,7 +10,6 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { useUser, useFirestore, addDocumentNonBlocking } from '@/firebase';
 import type { Ride, GeoPoint } from '@/types';
 import { useToast } from '@/hooks/use-toast';
-import { Label } from '@/components/ui/label';
 
 // Haversine distance calculation
 function haversineDistance(coords1: GeoPoint, coords2: GeoPoint): number {
@@ -47,6 +46,7 @@ export default function RidePage() {
   const [currentSpeed, setCurrentSpeed] = useState(0); // in km/h
   const [route, setRoute] = useState<GeoPoint[]>([]);
   const [lastLocation, setLastLocation] = useState<GeoPoint | null>(null);
+  const [elevationGain, setElevationGain] = useState(0); // in meters
 
   // Final summary data
   const [finishedRide, setFinishedRide] = useState<Omit<Ride, 'id' | 'userId'> | null>(null);
@@ -65,8 +65,8 @@ export default function RidePage() {
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
         (position) => {
-          const { latitude, longitude } = position.coords;
-          setLastLocation({ latitude, longitude });
+          const { latitude, longitude, altitude } = position.coords;
+          setLastLocation({ latitude, longitude, altitude });
           setIsLocationLoading(false);
           setLocationError(null);
         },
@@ -112,17 +112,15 @@ export default function RidePage() {
       return;
     }
     
+    resetRide();
     setStatus('tracking');
     setLocationError(null);
-    setRoute([]);
-    setDistance(0);
-    setElapsedTime(0);
     startTimer();
 
     watchIdRef.current = navigator.geolocation.watchPosition(
       (position) => {
-        const { latitude, longitude, speed } = position.coords;
-        const newPoint: GeoPoint = { latitude, longitude };
+        const { latitude, longitude, speed, altitude } = position.coords;
+        const newPoint: GeoPoint = { latitude, longitude, altitude };
         
         setCurrentSpeed(speed ? speed * 3.6 : 0); // m/s to km/h
 
@@ -130,6 +128,11 @@ export default function RidePage() {
           if (prevRoute.length > 0) {
             const lastPoint = prevRoute[prevRoute.length - 1];
             setDistance((prevDist) => prevDist + haversineDistance(lastPoint, newPoint));
+            
+            // Elevation gain calculation
+            if (lastPoint.altitude != null && altitude != null && altitude > lastPoint.altitude) {
+              setElevationGain(prevGain => prevGain + (altitude - lastPoint.altitude));
+            }
           }
           return [...prevRoute, newPoint];
         });
@@ -153,7 +156,24 @@ export default function RidePage() {
   };
 
   const resumeTracking = () => {
-    startTracking(); // Re-initiates watchPosition
+    // Re-initiates watchPosition to get fresh data
+    if (watchIdRef.current !== null) {
+      navigator.geolocation.clearWatch(watchIdRef.current);
+    }
+    watchIdRef.current = navigator.geolocation.watchPosition(
+      (position) => {
+        const { latitude, longitude, speed, altitude } = position.coords;
+        const newPoint: GeoPoint = { latitude, longitude, altitude };
+        setCurrentSpeed(speed ? speed * 3.6 : 0);
+        setRoute((prevRoute) => [...prevRoute, newPoint]);
+        setLastLocation(newPoint);
+      },
+      (err) => {
+        setLocationError(`Tracking error: ${err.message}. Ride paused.`);
+        pauseTracking();
+      },
+      { enableHighAccuracy: true, maximumAge: 0, timeout: 5000 }
+    );
     setStatus('tracking');
     startTimer();
   };
@@ -170,6 +190,7 @@ export default function RidePage() {
       distance: distance,
       averageSpeed: elapsedTime > 0 ? (distance / (elapsedTime / 3600)) : 0, // km/h
       route: route,
+      elevationGain: elevationGain,
     };
     setFinishedRide(rideData);
 
@@ -192,7 +213,7 @@ export default function RidePage() {
         });
       }
     }
-  }, [elapsedTime, distance, route, user, firestore, toast]);
+  }, [elapsedTime, distance, route, user, firestore, toast, elevationGain]);
 
   const resetRide = () => {
     setStatus('idle');
@@ -201,6 +222,7 @@ export default function RidePage() {
     setCurrentSpeed(0);
     setRoute([]);
     setFinishedRide(null);
+    setElevationGain(0);
     startTimeRef.current = null;
   };
   
@@ -212,143 +234,22 @@ export default function RidePage() {
     return `${hours}:${minutes}:${seconds}`;
   };
 
-  const renderMetrics = () => (
-    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
-        <Card>
-            <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium flex items-center justify-center gap-2 text-muted-foreground"><Timer /> Duration</CardTitle>
-            </CardHeader>
-            <CardContent>
-                <p className="text-2xl font-bold">{formatTime(elapsedTime)}</p>
-            </CardContent>
-        </Card>
-        <Card>
-            <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium flex items-center justify-center gap-2 text-muted-foreground"><Milestone /> Distance</CardTitle>
-            </CardHeader>
-            <CardContent>
-                <p className="text-2xl font-bold">{distance.toFixed(2)} <span className="text-sm font-normal text-muted-foreground">km</span></p>
-            </CardContent>
-        </Card>
-        <Card>
-            <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium flex items-center justify-center gap-2 text-muted-foreground"><Gauge /> Speed</CardTitle>
-            </CardHeader>
-            <CardContent>
-                <p className="text-2xl font-bold">{currentSpeed.toFixed(1)} <span className="text-sm font-normal text-muted-foreground">km/h</span></p>
-            </CardContent>
-        </Card>
-        <Card>
-            <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium flex items-center justify-center gap-2 text-muted-foreground"><Gauge /> Avg. Speed</CardTitle>
-            </CardHeader>
-            <CardContent>
-                 <p className="text-2xl font-bold">{(elapsedTime > 0 ? (distance / (elapsedTime / 3600)) : 0).toFixed(1)} <span className="text-sm font-normal text-muted-foreground">km/h</span></p>
-            </CardContent>
-        </Card>
-    </div>
-  );
+  const formatPace = (seconds: number, km: number) => {
+    if (km <= 0) return '00:00';
+    const pace = seconds / km; // seconds per km
+    const paceMinutes = Math.floor(pace / 60).toString().padStart(2, '0');
+    const paceSeconds = Math.floor(pace % 60).toString().padStart(2, '0');
+    return `${paceMinutes}:${paceSeconds}`;
+  };
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Activity Tracking</CardTitle>
-        <CardDescription>Track your bike rides and other activities in real-time.</CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-6">
-        
-        {status === 'idle' && (
-          <div className="flex flex-col items-center justify-center gap-4 py-16 text-center">
-            <p className="text-muted-foreground">Ready to start your next adventure?</p>
-            <Button size="lg" onClick={startTracking}>
-              <Play className="mr-2 h-5 w-5" /> Start Ride
-            </Button>
-          </div>
-        )}
-        
-        {(status === 'tracking' || status === 'paused') && (
-          <div className="space-y-6">
-            {renderMetrics()}
-            <div className="flex justify-center gap-4">
-              {status === 'tracking' ? (
-                <Button size="lg" variant="outline" onClick={pauseTracking}>
-                  <Pause className="mr-2 h-5 w-5" /> Pause
-                </Button>
-              ) : (
-                <Button size="lg" variant="outline" onClick={resumeTracking}>
-                  <Play className="mr-2 h-5 w-5" /> Resume
-                </Button>
-              )}
-              <Button size="lg" variant="destructive" onClick={endTracking}>
-                <Square className="mr-2 h-5 w-5" /> End Ride
-              </Button>
-            </div>
-          </div>
-        )}
-
-        {status === 'finished' && finishedRide && (
-            <div className="space-y-6">
-                <Card className="bg-muted/30">
-                    <CardHeader>
-                        <CardTitle className="flex items-center gap-2"><Star /> Ride Summary</CardTitle>
-                        <CardDescription>
-                            Great work! Here's a summary of your activity on {new Date(finishedRide.startTime).toLocaleDateString()}.
-                        </CardDescription>
-                    </CardHeader>
-                    <CardContent className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
-                        <div className="space-y-1">
-                            <p className="text-sm text-muted-foreground">Duration</p>
-                            <p className="text-xl font-bold">{formatTime(finishedRide.duration)}</p>
-                        </div>
-                         <div className="space-y-1">
-                            <p className="text-sm text-muted-foreground">Distance</p>
-                            <p className="text-xl font-bold">{finishedRide.distance.toFixed(2)} km</p>
-                        </div>
-                         <div className="space-y-1">
-                            <p className="text-sm text-muted-foreground">Avg. Speed</p>
-                            <p className="text-xl font-bold">{finishedRide.averageSpeed.toFixed(1)} km/h</p>
-                        </div>
-                         <div className="space-y-1">
-                            <p className="text-sm text-muted-foreground">Route Points</p>
-                            <p className="text-xl font-bold">{finishedRide.route.length}</p>
-                        </div>
-                    </CardContent>
-                </Card>
-                <div className="flex justify-center">
-                    <Button onClick={resetRide}>
-                        <Redo className="mr-2 h-4 w-4"/> Start New Ride
-                    </Button>
-                </div>
-            </div>
-        )}
-
-        {locationError && <p className="text-center text-destructive">{locationError}</p>}
-        
-        <div className="space-y-2">
-            <Label>Live Map</Label>
-            <div className="flex items-center gap-2">
-                <Button 
-                    variant={mapType === 'street' ? 'secondary' : 'outline'}
-                    size="sm"
-                    onClick={() => setMapType('street')}
-                >
-                    <MapPin className="mr-2 h-4 w-4" /> Street
-                </Button>
-                <Button 
-                    variant={mapType === 'satellite' ? 'secondary' : 'outline'}
-                    size="sm"
-                    onClick={() => setMapType('satellite')}
-                >
-                    <Satellite className="mr-2 h-4 w-4" /> Satellite
-                </Button>
-            </div>
-        </div>
-        
-        {isLocationLoading && (
-          <Skeleton className="h-[400px] w-full rounded-lg" />
-        )}
-        {!isLocationLoading && lastLocation && (
-          <div className="aspect-video w-full rounded-md overflow-hidden border">
+     <div className="flex flex-col h-[calc(100vh-140px)] md:h-[calc(100vh-110px)]">
+      {/* Map Area */}
+      <div className="relative w-full h-1/2 md:h-2/5">
+        {isLocationLoading ? (
+          <Skeleton className="h-full w-full rounded-lg" />
+        ) : lastLocation ? (
+          <>
             <iframe
               width="100%"
               height="100%"
@@ -356,11 +257,80 @@ export default function RidePage() {
               loading="lazy"
               src={mapUrl}
               title="Location Map"
-              allowFullScreen
+              className="rounded-t-lg"
             ></iframe>
+            <div className="absolute top-2 right-2 flex gap-2">
+              <Button variant={mapType === 'street' ? 'secondary' : 'outline'} size="icon" onClick={() => setMapType('street')} className="h-8 w-8"><MapPin className="h-4 w-4" /></Button>
+              <Button variant={mapType === 'satellite' ? 'secondary' : 'outline'} size="icon" onClick={() => setMapType('satellite')} className="h-8 w-8"><Satellite className="h-4 w-4" /></Button>
+            </div>
+          </>
+        ) : (
+          <div className="h-full w-full rounded-lg bg-muted flex items-center justify-center flex-col text-center p-4">
+            <MapPin className="h-8 w-8 text-muted-foreground mb-2" />
+            <p className="text-muted-foreground">Could not load map.</p>
+            {locationError && <p className="text-sm text-destructive">{locationError}</p>}
           </div>
         )}
-      </CardContent>
-    </Card>
+      </div>
+
+      {/* Content Area */}
+      <Card className="flex-1 flex flex-col rounded-t-none">
+        <CardContent className="flex-1 flex flex-col p-4">
+          {status === 'idle' && (
+            <div className="flex-1 flex flex-col items-center justify-center text-center">
+              <h2 className="text-2xl font-semibold">Ready to Ride?</h2>
+              <p className="text-muted-foreground mb-6">Press Start to begin tracking your activity.</p>
+              <Button size="lg" className="rounded-full w-24 h-24" onClick={startTracking}>
+                <Play className="h-8 w-8 fill-primary-foreground" />
+              </Button>
+            </div>
+          )}
+
+          {(status === 'tracking' || status === 'paused') && (
+            <div className="flex-1 flex flex-col">
+              <div className="grid grid-cols-3 gap-4 text-center mb-4">
+                <div><p className="text-sm text-muted-foreground">DISTANCE (KM)</p><p className="text-3xl font-bold">{distance.toFixed(2)}</p></div>
+                <div><p className="text-sm text-muted-foreground">TIME</p><p className="text-3xl font-bold">{formatTime(elapsedTime)}</p></div>
+                <div><p className="text-sm text-muted-foreground">AVG PACE</p><p className="text-3xl font-bold">{formatPace(elapsedTime, distance)}</p></div>
+              </div>
+              <div className="grid grid-cols-2 gap-4 text-center mb-4">
+                <div><p className="text-sm text-muted-foreground">ELEV GAIN (M)</p><p className="text-xl font-semibold">{elevationGain.toFixed(0)}</p></div>
+                <div><p className="text-sm text-muted-foreground">SPEED (KM/H)</p><p className="text-xl font-semibold">{currentSpeed.toFixed(1)}</p></div>
+              </div>
+
+              <div className="mt-auto flex justify-center gap-4">
+                {status === 'tracking' ? (
+                  <Button size="lg" variant="outline" className="rounded-full w-20 h-20" onClick={pauseTracking}><Pause className="h-6 w-6" /></Button>
+                ) : (
+                  <Button size="lg" variant="outline" className="rounded-full w-20 h-20" onClick={resumeTracking}><Play className="h-6 w-6" /></Button>
+                )}
+                <Button size="lg" variant="destructive" className="rounded-full w-20 h-20" onClick={endTracking}><Square className="h-6 w-6" /></Button>
+              </div>
+            </div>
+          )}
+
+          {status === 'finished' && finishedRide && (
+            <div className="flex-1 flex flex-col">
+              <h2 className="text-2xl font-bold mb-1">Ride Summary</h2>
+              <p className="text-muted-foreground mb-4">Great work! Here's your activity from {new Date(finishedRide.startTime).toLocaleDateString()}.</p>
+
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-4 text-left">
+                <Card><CardHeader><CardDescription className="flex items-center gap-1"><Milestone /> Distance</CardDescription><CardTitle>{finishedRide.distance.toFixed(2)} <span className="text-base font-normal">km</span></CardTitle></CardHeader></Card>
+                <Card><CardHeader><CardDescription className="flex items-center gap-1"><Timer /> Moving Time</CardDescription><CardTitle>{formatTime(finishedRide.duration)}</CardTitle></CardHeader></Card>
+                <Card><CardHeader><CardDescription className="flex items-center gap-1"><Mountain /> Elev. Gain</CardDescription><CardTitle>{(finishedRide.elevationGain || 0).toFixed(0)} <span className="text-base font-normal">m</span></CardTitle></CardHeader></Card>
+                <Card><CardHeader><CardDescription className="flex items-center gap-1"><TrendingUp /> Avg. Pace</CardDescription><CardTitle>{formatPace(finishedRide.duration, finishedRide.distance)} <span className="text-base font-normal">/km</span></CardTitle></CardHeader></Card>
+                <Card><CardHeader><CardDescription className="flex items-center gap-1"><Gauge /> Avg. Speed</CardDescription><CardTitle>{finishedRide.averageSpeed.toFixed(1)} <span className="text-base font-normal">km/h</span></CardTitle></CardHeader></Card>
+              </div>
+
+              <div className="mt-auto flex justify-center">
+                <Button onClick={resetRide} size="lg"><Redo className="mr-2 h-4 w-4" /> Start New Ride</Button>
+              </div>
+            </div>
+          )}
+
+          {locationError && !isLocationLoading && <p className="text-center text-sm text-destructive p-2 mt-auto">{locationError}</p>}
+        </CardContent>
+      </Card>
+    </div>
   );
 }
