@@ -10,7 +10,6 @@ import {
   LogOut,
   User,
   Wrench,
-  Bike,
   Map,
   Calculator,
 } from 'lucide-react';
@@ -36,7 +35,6 @@ import type { UserProfile } from '@/types';
 const navItems = [
   { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { href: '/vehicles', label: 'Vehicles', icon: Car },
-  { href: '/ride', label: 'Ride', icon: Bike },
   { href: '/maps', label: 'Map', icon: Map },
   { href: '/estimate-cost', label: 'Estimate Cost', icon: Calculator },
 ];
@@ -106,7 +104,7 @@ export function Header() {
           <DropdownMenuTrigger asChild>
             <Button variant="secondary" size="icon" className="rounded-full">
               <Avatar className="h-8 w-8">
-                <AvatarImage src={userProfile?.photoURL || user?.photoURL || undefined} alt={displayName} />
+                <AvatarImage src={userProfile?.photoURL || undefined} alt={displayName} />
                 <AvatarFallback>{displayInitial}</AvatarFallback>
               </Avatar>
               <span className="sr-only">Toggle user menu</span>

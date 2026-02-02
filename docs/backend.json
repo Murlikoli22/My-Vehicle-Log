@@ -218,79 +218,6 @@
         "email",
         "name"
       ]
-    },
-    "Ride": {
-      "$schema": "http://json-schema.org/draft-07/schema#",
-      "title": "Ride",
-      "type": "object",
-      "description": "Represents a recorded activity, like a bike ride.",
-      "properties": {
-        "id": {
-          "type": "string",
-          "description": "Unique identifier for the ride."
-        },
-        "userId": {
-          "type": "string",
-          "description": "Reference to the User who recorded this ride."
-        },
-        "startTime": {
-          "type": "string",
-          "format": "date-time",
-          "description": "The start time of the ride."
-        },
-        "endTime": {
-          "type": "string",
-          "format": "date-time",
-          "description": "The end time of the ride."
-        },
-        "duration": {
-          "type": "number",
-          "description": "Total duration of the ride in seconds."
-        },
-        "distance": {
-          "type": "number",
-          "description": "Total distance of the ride in kilometers."
-        },
-        "averageSpeed": {
-          "type": "number",
-          "description": "Average speed of the ride in km/h."
-        },
-        "elevationGain": {
-          "type": "number",
-          "description": "Total elevation gain during the ride in meters."
-        },
-        "route": {
-          "type": "array",
-          "description": "An array of geographic points that make up the ride's route.",
-          "items": {
-            "type": "object",
-            "properties": {
-              "latitude": {
-                "type": "number"
-              },
-              "longitude": {
-                "type": "number"
-              },
-              "altitude": {
-                "type": "number",
-                "description": "The altitude at the point, in meters."
-              }
-            },
-            "required": [
-              "latitude",
-              "longitude"
-            ]
-          }
-        }
-      },
-      "required": [
-        "id",
-        "userId",
-        "startTime",
-        "endTime",
-        "duration",
-        "distance"
-      ]
     }
   },
   "auth": {
@@ -385,28 +312,8 @@
             }
           ]
         }
-      },
-      {
-        "path": "/users/{userId}/rides/{rideId}",
-        "definition": {
-          "entityName": "Ride",
-          "schema": {
-            "$ref": "#/backend/entities/Ride"
-          },
-          "description": "Stores GPS-tracked rides for a specific user.",
-          "params": [
-            {
-              "name": "userId",
-              "description": "The Firebase Auth UID of the user who owns the ride."
-            },
-            {
-              "name": "rideId",
-              "description": "The unique ID of the ride."
-            }
-          ]
-        }
       }
     ],
-    "reasoning": "The Firestore structure is designed to ensure authorization independence, clarity, and scalability. It leverages path-based ownership for user-specific data and denormalization to avoid complex security rules with `get()` calls.\n\n*   **/users/{userId}**: Stores user profiles, including nested objects for emergency and medical information for fast retrieval. Authorization is based on the `request.auth.uid` matching the `{userId}`.\n*   **/users/{userId}/vehicles/{vehicleId}**: Stores vehicle data owned by a specific user. The `userId` is embedded in the path, making ownership clear and enabling simple security rules.\n*   **/users/{userId}/vehicles/{vehicleId}/documents/{documentId}**: Stores documents related to a specific vehicle. The path includes both `userId` and `vehicleId`, ensuring that only the owner of the vehicle can access these documents.\n*   **/users/{userId}/vehicles/{vehicleId}/maintenanceLogs/{maintenanceLogId}**: Stores maintenance logs for a specific vehicle, following the same ownership pattern as documents.\n*   **/users/{userId}/rides/{rideId}**: Stores GPS-tracked ride data for a specific user, ensuring that only the user who recorded the ride can access it.\n\n**Authorization Independence (CRITICAL):** The structure avoids `get()` calls in security rules by embedding ownership information within the document paths. This enables atomic operations and simplifies security rule logic.  For example, to create a new document for a vehicle, the rule only needs to check that `request.auth.uid == userId` from the path.  It does not need to `get()` the vehicle document to verify ownership.\n\nThis updated structure removes the separate `emergencyContacts` collection and nests that information within the `user` document itself. This is a deliberate denormalization strategy to ensure that in an emergency scenario, all of a user's critical information can be retrieved with a single document read, which is faster and more efficient."
+    "reasoning": "The Firestore structure is designed to ensure authorization independence, clarity, and scalability. It leverages path-based ownership for user-specific data and denormalization to avoid complex security rules with `get()` calls.\n\n*   **/users/{userId}**: Stores user profiles, including nested objects for emergency and medical information for fast retrieval. Authorization is based on the `request.auth.uid` matching the `{userId}`.\n*   **/users/{userId}/vehicles/{vehicleId}**: Stores vehicle data owned by a specific user. The `userId` is embedded in the path, making ownership clear and enabling simple security rules.\n*   **/users/{userId}/vehicles/{vehicleId}/documents/{documentId}**: Stores documents related to a specific vehicle. The path includes both `userId` and `vehicleId`, ensuring that only the owner of the vehicle can access these documents.\n*   **/users/{userId}/vehicles/{vehicleId}/maintenanceLogs/{maintenanceLogId}**: Stores maintenance logs for a specific vehicle, following the same ownership pattern as documents.\n\n**Authorization Independence (CRITICAL):** The structure avoids `get()` calls in security rules by embedding ownership information within the document paths. This enables atomic operations and simplifies security rule logic.  For example, to create a new document for a vehicle, the rule only needs to check that `request.auth.uid == userId` from the path.  It does not need to `get()` the vehicle document to verify ownership.\n\nThis updated structure removes the separate `emergencyContacts` collection and nests that information within the `user` document itself. This is a deliberate denormalization strategy to ensure that in an emergency scenario, all of a user's critical information can be retrieved with a single document read, which is faster and more efficient."
   }
 }
