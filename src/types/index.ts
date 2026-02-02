@@ -74,6 +74,7 @@ export type Ride = {
   endTime: string; // ISO string
   duration: number; // in seconds
   distance: number; // in km
+  avgPace: number; // seconds per km
   averageSpeed: number; // in km/h
   route: GeoPoint[];
   elevationGain?: number;
