@@ -61,39 +61,8 @@ const myLocationIcon = L.divIcon({
 });
 
 
-// Polyline decoder from OSRM
-function decodePolyline(encoded: string) {
-  let lat = 0,
-    lng = 0;
-  const coordinates = [];
-  let index = 0;
-  while (index < encoded.length) {
-    let byte,
-      shift = 0,
-      result = 0;
-    do {
-      byte = encoded.charCodeAt(index++) - 63;
-      result |= (byte & 0x1f) << shift;
-      shift += 5;
-    } while (byte >= 0x20);
-    const dlat = (result & 1) ? ~(result >> 1) : result >> 1;
-    lat += dlat;
-    shift = 0;
-    result = 0;
-    do {
-      byte = encoded.charCodeAt(index++) - 63;
-      result |= (byte & 0x1f) << shift;
-      shift += 5;
-    } while (byte >= 0x20);
-    const dlng = (result & 1) ? ~(result >> 1) : result >> 1;
-    lng += dlng;
-    coordinates.push([lat / 1e5, lng / 1e5]);
-  }
-  return coordinates as [number, number][];
-}
-
 type Point = { lat: number; lon: number; name: string };
-type SearchResult = { lat: string; lon: string; display_name: string };
+type SearchResult = { properties: { lat: number; lon: number; formatted: string; } };
 type RouteSummary = { distance: number; duration: number };
 
 function MapController({
@@ -116,6 +85,7 @@ function MapController({
     setAutoCenter: (val: boolean) => void;
 }) {
   const map = useMap();
+  const apiKey = process.env.NEXT_PUBLIC_GEOAPIFY_API_KEY;
 
   useEffect(() => {
     if (isLocating) {
@@ -147,9 +117,9 @@ function MapController({
 
       const { lat, lng } = e.latlng;
       try {
-        const response = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`);
+        const response = await fetch(`https://api.geoapify.com/v1/geocode/reverse?lat=${lat}&lon=${lng}&apiKey=${apiKey}`);
         const data = await response.json();
-        const name = data.display_name || `Location at ${lat.toFixed(4)}, ${lng.toFixed(4)}`;
+        const name = data.features?.[0]?.properties.formatted || `Location at ${lat.toFixed(4)}, ${lng.toFixed(4)}`;
 
         const popup = L.popup()
           .setLatLng(e.latlng)
@@ -202,6 +172,7 @@ export default function InteractiveMap() {
   const [autoCenter, setAutoCenter] = useState(true);
 
   const { toast } = useToast();
+  const apiKey = process.env.NEXT_PUBLIC_GEOAPIFY_API_KEY;
 
   useEffect(() => {
     if (map) {
@@ -230,18 +201,19 @@ export default function InteractiveMap() {
     if (!searchQuery) return;
     setIsSearching(true);
     try {
-      const response = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(searchQuery)}`);
+      const response = await fetch(`https://api.geoapify.com/v1/geocode/search?text=${encodeURIComponent(searchQuery)}&limit=5&apiKey=${apiKey}`);
       const data = await response.json();
-      setSearchResults(data);
+      setSearchResults(data.features || []);
     } catch (error) {
       console.error('Geocoding search failed:', error);
+      toast({ variant: 'destructive', title: 'Search Failed', description: 'Could not fetch location results.' });
     } finally {
       setIsSearching(false);
     }
   };
 
   const handleSelectResult = (result: SearchResult) => {
-    const point = { lat: parseFloat(result.lat), lon: parseFloat(result.lon), name: result.display_name };
+    const point = { lat: result.properties.lat, lon: result.properties.lon, name: result.properties.formatted };
     setSelectedMarker(point);
     map?.flyTo([point.lat, point.lon], 14);
     setSearchResults([]);
@@ -279,28 +251,32 @@ export default function InteractiveMap() {
       const fetchRoute = async () => {
           try {
             const response = await fetch(
-              `https://router.project-osrm.org/route/v1/driving/${startPoint.lon},${startPoint.lat};${endPoint.lon},${endPoint.lat}?overview=full&geometries=polyline`
+              `https://api.geoapify.com/v1/routing?waypoints=${startPoint.lat},${startPoint.lon}|${endPoint.lat},${endPoint.lon}&mode=drive&apiKey=${apiKey}`
             );
             const data = await response.json();
-            if (data.routes && data.routes[0]) {
-              const route = data.routes[0];
-              const decoded = decodePolyline(route.geometry);
-              setRoute(decoded);
-              setRouteSummary({ distance: route.distance, duration: route.duration });
+            if (data.features && data.features.length > 0) {
+              const feature = data.features[0];
+              const geometry = feature.geometry.coordinates[0];
+              const swappedCoords: [number, number][] = geometry.map((c: [number, number]) => [c[1], c[0]]);
+              setRoute(swappedCoords);
+              setRouteSummary({ distance: feature.properties.distance, duration: feature.properties.time });
               if(map) {
-                const bounds = L.latLngBounds(decoded);
+                const bounds = L.latLngBounds(swappedCoords);
                 map.fitBounds(bounds, { padding: [50, 50] });
               }
+            } else {
+                 toast({ variant: 'destructive', title: 'Routing Error', description: 'Could not find a route.' });
             }
           } catch (error) {
             console.error('Routing failed:', error);
+            toast({ variant: 'destructive', title: 'Routing Error', description: 'Failed to fetch route data.' });
           } finally {
             setIsRouting(false);
           }
       };
       fetchRoute();
     }
-  }, [startPoint, endPoint, map]);
+  }, [startPoint, endPoint, map, apiKey, toast]);
 
   return (
     <>
@@ -322,7 +298,7 @@ export default function InteractiveMap() {
             <ScrollArea className="h-64">
               {searchResults.map((result, i) => (
                 <div key={i} onClick={() => handleSelectResult(result)} className="p-4 border-t hover:bg-muted cursor-pointer">
-                  <p className="text-sm font-medium">{result.display_name}</p>
+                  <p className="text-sm font-medium">{result.properties.formatted}</p>
                 </div>
               ))}
             </ScrollArea>
@@ -375,20 +351,20 @@ export default function InteractiveMap() {
         <LayersControl position="topright">
           <LayersControl.BaseLayer checked name="Street Map">
             <TileLayer
-              url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-              attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+              url={`https://maps.geoapify.com/v1/tile/osm-carto/{z}/{x}/{y}.png?apiKey=${apiKey}`}
+              attribution='Powered by <a href="https://www.geoapify.com/" target="_blank">Geoapify</a> | © <a href="https://openmaptiles.org/" target="_blank">OpenMapTiles</a> © <a href="https://www.openstreetmap.org/copyright" target="_blank">OpenStreetMap</a> contributors'
             />
           </LayersControl.BaseLayer>
            <LayersControl.BaseLayer name="Dark Mode">
             <TileLayer
-              url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
-              attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
+              url={`https://maps.geoapify.com/v1/tile/dark-matter/{z}/{x}/{y}.png?apiKey=${apiKey}`}
+              attribution='Powered by <a href="https://www.geoapify.com/" target="_blank">Geoapify</a> | © <a href="https://openmaptiles.org/" target="_blank">OpenMapTiles</a> © <a href="https://www.openstreetmap.org/copyright" target="_blank">OpenStreetMap</a> contributors'
             />
           </LayersControl.BaseLayer>
           <LayersControl.BaseLayer name="Satellite">
             <TileLayer
-              url="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
-              attribution='&copy; <a href="https://www.arcgis.com/">Esri</a>'
+              url={`https://maps.geoapify.com/v1/tile/satellite/{z}/{x}/{y}.png?apiKey=${apiKey}`}
+              attribution='Powered by <a href="https://www.geoapify.com/" target="_blank">Geoapify</a> | © <a href="https://www.satmap.info/" target="_blank">Satmap.info</a> © <a href="https://www.maxar.com/" target="_blank">Maxar</a>'
             />
           </LayersControl.BaseLayer>
         </LayersControl>
