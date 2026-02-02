@@ -190,7 +190,7 @@ service cloud.firestore {
       match /rides/{rideId} {
         allow get: if isOwner(userId);
         allow list: if isOwner(userId);
-        allow create: if isOwner(userId);
+        allow create: if isOwner(userId) && hasCorrectOwnerIdOnCreate(userId);
         allow update: if isExistingOwner(userId) && isUserIdImmutable();
         allow delete: if isExistingOwner(userId);
       }
