@@ -204,6 +204,17 @@ export default function InteractiveMap() {
   const { toast } = useToast();
 
   useEffect(() => {
+    if (map) {
+      // Sometimes the map initializes before the container has its final size.
+      // This forces a resize after a short delay to ensure it renders correctly.
+      const timer = setTimeout(() => {
+        map.invalidateSize();
+      }, 100);
+      return () => clearTimeout(timer);
+    }
+  }, [map]);
+
+  useEffect(() => {
     if (locationError) {
         toast({
             variant: "destructive",
