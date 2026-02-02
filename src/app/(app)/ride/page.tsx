@@ -399,26 +399,27 @@ export default function RideTrackingPage() {
           <Button size="lg" className="w-full bg-[#FC4C02] hover:bg-[#FC4C02]/90 text-white" onClick={handleStart}>Start Ride</Button>
         </div>
       ) : (
-        <>
-          <div className="flex-grow grid grid-cols-2 grid-rows-3 md:grid-cols-3 md:grid-rows-2 gap-4 items-center justify-center text-center">
-            <div><p className="text-sm text-gray-400">DISTANCE (KM)</p><p className="text-5xl md:text-6xl font-bold font-mono tracking-tighter">{distance.toFixed(2)}</p></div>
-            <div className="col-span-2 md:col-span-1 md:row-start-1"><p className="text-sm text-gray-400">TIME</p><p className="text-6xl md:text-7xl font-bold font-mono tracking-tighter">{formatTime(elapsedTime)}</p></div>
-            <div><p className="text-sm text-gray-400">AVG PACE (/KM)</p><p className="text-5xl md:text-6xl font-bold font-mono tracking-tighter">{avgPace}</p></div>
-            <div><p className="text-sm text-gray-400">ELEV GAIN (M)</p><p className="text-4xl md:text-5xl font-bold font-mono tracking-tighter">{elevationGain.toFixed(0)}</p></div>
-            <div className="md:col-start-3 md:row-start-2"><p className="text-sm text-gray-400">SPEED (KM/H)</p><p className="text-4xl md:text-5xl font-bold font-mono tracking-tighter">{currentSpeed.toFixed(1)}</p></div>
-          </div>
-          <div className="flex-shrink-0 flex items-center justify-center gap-8 py-8">
-            {status === 'tracking' && <Button variant="outline" className="w-24 h-24 rounded-full border-2 border-gray-400 text-gray-400 bg-transparent hover:bg-gray-800 hover:text-white" onClick={handlePause}><Pause className="h-10 w-10 fill-current" /></Button>}
-            {status === 'paused' && <Button className="w-24 h-24 rounded-full bg-green-600 hover:bg-green-500 text-white" onClick={handleResume}><Play className="h-10 w-10 fill-current" /></Button>}
-            <AlertDialog>
-                <AlertDialogTrigger asChild><Button className="w-24 h-24 rounded-full bg-red-600 hover:bg-red-500 text-white"><Square className="h-8 w-8 fill-current" /></Button></AlertDialogTrigger>
-                <AlertDialogContent>
-                    <AlertDialogHeader><AlertDialogTitle>Finish Ride?</AlertDialogTitle><AlertDialogDescription>Do you want to end and save this ride?</AlertDialogDescription></AlertDialogHeader>
-                    <AlertDialogFooter><AlertDialogCancel>Cancel</AlertDialogCancel><AlertDialogAction onClick={handleStop}>Stop & Save</AlertDialogAction></AlertDialogFooter>
-                </AlertDialogContent>
-            </AlertDialog>
-          </div>
-        </>
+        <div className="flex-1 flex flex-col">
+            <div className="relative flex-[2] rounded-lg overflow-hidden mb-4 border border-gray-700">
+                <RideRouteMap route={route} />
+            </div>
+            <div className="flex-1 grid grid-cols-3 gap-4 text-center mb-4">
+                <div><p className="text-sm text-gray-400">DISTANCE (KM)</p><p className="text-4xl font-bold font-mono tracking-tighter">{distance.toFixed(2)}</p></div>
+                <div><p className="text-sm text-gray-400">TIME</p><p className="text-4xl font-bold font-mono tracking-tighter">{formatTime(elapsedTime)}</p></div>
+                <div><p className="text-sm text-gray-400">AVG PACE (/KM)</p><p className="text-4xl font-bold font-mono tracking-tighter">{avgPace}</p></div>
+            </div>
+            <div className="flex-shrink-0 flex items-center justify-center gap-8 py-4">
+                {status === 'tracking' && <Button variant="outline" className="w-24 h-24 rounded-full border-2 border-gray-400 text-gray-400 bg-transparent hover:bg-gray-800 hover:text-white" onClick={handlePause}><Pause className="h-10 w-10 fill-current" /></Button>}
+                {status === 'paused' && <Button className="w-24 h-24 rounded-full bg-green-600 hover:bg-green-500 text-white" onClick={handleResume}><Play className="h-10 w-10 fill-current" /></Button>}
+                <AlertDialog>
+                    <AlertDialogTrigger asChild><Button className="w-24 h-24 rounded-full bg-red-600 hover:bg-red-500 text-white"><Square className="h-8 w-8 fill-current" /></Button></AlertDialogTrigger>
+                    <AlertDialogContent>
+                        <AlertDialogHeader><AlertDialogTitle>Finish Ride?</AlertDialogTitle><AlertDialogDescription>Do you want to end and save this ride?</AlertDialogDescription></AlertDialogHeader>
+                        <AlertDialogFooter><AlertDialogCancel>Cancel</AlertDialogCancel><AlertDialogAction onClick={handleStop}>Stop & Save</AlertDialogAction></AlertDialogFooter>
+                    </AlertDialogContent>
+                </AlertDialog>
+            </div>
+        </div>
       )}
     </div>
   );

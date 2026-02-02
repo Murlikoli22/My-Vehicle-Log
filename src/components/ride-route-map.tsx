@@ -1,9 +1,9 @@
 'use client';
 
-import { MapContainer, TileLayer, Polyline, Marker } from 'react-leaflet';
+import { MapContainer, TileLayer, Polyline, Marker, useMap } from 'react-leaflet';
 import L, { type LatLngExpression } from 'leaflet';
 import type { GeoPoint } from '@/types';
-import { useMemo } from 'react';
+import { useMemo, useEffect } from 'react';
 
 // Fix for default icon path issue with webpack
 import icon from 'leaflet/dist/images/marker-icon.png';
@@ -24,6 +24,14 @@ interface RideRouteMapProps {
   route: GeoPoint[];
   interactive?: boolean;
   isThumbnail?: boolean;
+}
+
+function MapUpdater({ center, zoom }: { center: LatLngExpression; zoom: number }) {
+  const map = useMap();
+  useEffect(() => {
+    map.setView(center, zoom);
+  }, [center, zoom, map]);
+  return null;
 }
 
 export default function RideRouteMap({ route, interactive = true, isThumbnail = false }: RideRouteMapProps) {
@@ -51,9 +59,9 @@ export default function RideRouteMap({ route, interactive = true, isThumbnail = 
 
   return (
     <MapContainer
-      bounds={positions.length > 1 ? positions : undefined}
-      center={positions.length > 0 ? positions[0] : undefined}
-      zoom={positions.length <= 1 ? 15 : undefined}
+      bounds={isThumbnail && positions.length > 1 ? positions : undefined}
+      center={currentPosition || [51.505, -0.09]}
+      zoom={16}
       className="h-full w-full"
       {...mapOptions}
     >
@@ -66,6 +74,7 @@ export default function RideRouteMap({ route, interactive = true, isThumbnail = 
       />
       {positions.length > 0 && <Polyline pathOptions={{ color: '#FC4C02', weight: isThumbnail ? 3 : 5 }} positions={positions} />}
       {currentPosition && !isThumbnail && <Marker position={currentPosition} />}
+      {currentPosition && !isThumbnail && <MapUpdater center={currentPosition} zoom={16} />}
     </MapContainer>
   );
 }
