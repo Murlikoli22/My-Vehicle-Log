@@ -85,7 +85,7 @@ function MapController({
     setAutoCenter: (val: boolean) => void;
 }) {
   const map = useMap();
-  const apiKey = process.env.NEXT_PUBLIC_GEOAPIFY_API_KEY;
+  const apiKey = "def2bab3c341425f8ae7f67efc3752ef";
 
   useEffect(() => {
     if (isLocating) {
@@ -98,7 +98,9 @@ function MapController({
   useMapEvents({
     locationfound(e) {
       setMyLocation(e.latlng);
-      addLiveRoutePoint(e.latlng);
+      if (isLocating) {
+        addLiveRoutePoint(e.latlng);
+      }
       if (autoCenter) {
         map.flyTo(e.latlng, map.getZoom());
       }
@@ -172,16 +174,21 @@ export default function InteractiveMap() {
   const [autoCenter, setAutoCenter] = useState(true);
 
   const { toast } = useToast();
-  const apiKey = process.env.NEXT_PUBLIC_GEOAPIFY_API_KEY;
+  const apiKey = "def2bab3c341425f8ae7f67efc3752ef";
 
   useEffect(() => {
     if (map) {
-      // Sometimes the map initializes before the container has its final size.
-      // This forces a resize after a short delay to ensure it renders correctly.
       const timer = setTimeout(() => {
         map.invalidateSize();
       }, 100);
-      return () => clearTimeout(timer);
+
+      // Locate the user on initial map load
+      map.locate({ setView: true, maxZoom: 14 });
+
+      return () => {
+        clearTimeout(timer);
+        map.stopLocate();
+      };
     }
   }, [map]);
 
@@ -385,7 +392,7 @@ export default function InteractiveMap() {
         {endPoint && <Marker position={[endPoint.lat, endPoint.lon]} icon={endIcon}><Popup><strong>End:</strong> {endPoint.name}</Popup></Marker>}
         {route.length > 0 && <Polyline positions={route} color="hsl(var(--primary))" weight={5} opacity={0.7} />}
         
-        {isLocating && myLocation && <Marker position={myLocation} icon={myLocationIcon} />}
+        {myLocation && <Marker position={myLocation} icon={myLocationIcon} />}
         {isLocating && liveRoute.length > 1 && <Polyline positions={liveRoute} color="#FC4C02" weight={3} />}
 
       </MapContainer>
