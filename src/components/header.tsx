@@ -12,7 +12,6 @@ import {
   Wrench,
   Map,
   Calculator,
-  BarChart2,
 } from 'lucide-react';
 import { signOut } from 'firebase/auth';
 import { doc } from 'firebase/firestore';
@@ -38,7 +37,6 @@ const navItems = [
   { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { href: '/vehicles', label: 'Vehicles', icon: Car },
   { href: '/maps', label: 'Map', icon: Map },
-  { href: '/sales', label: 'Sales', icon: BarChart2 },
   { href: '/estimate-cost', label: 'Estimate Cost', icon: Calculator },
 ];
 

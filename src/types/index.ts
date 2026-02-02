@@ -60,14 +60,3 @@ export type UserProfile = {
     conditions: string;
   };
 };
-
-export type Sale = {
-  orderId: string;
-  date: string;
-  region: 'North' | 'South' | 'East' | 'West';
-  category: 'Electronics' | 'Clothing' | 'Books' | 'Home Goods';
-  product: string;
-  units: number;
-  unitCost: number;
-  totalSale: number;
-};
