@@ -1,6 +1,5 @@
 'use client';
 
-import 'leaflet/dist/leaflet.css';
 import { MapContainer, TileLayer, Polyline } from 'react-leaflet';
 import L, { type LatLngExpression } from 'leaflet';
 import type { GeoPoint } from '@/types';
