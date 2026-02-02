@@ -35,7 +35,6 @@ import type { UserProfile } from '@/types';
 const navItems = [
   { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { href: '/vehicles', label: 'Vehicles', icon: Car },
-  { href: '/maps', label: 'Map', icon: Map },
   { href: '/estimate-cost', label: 'Estimate Cost', icon: Calculator },
 ];
 
