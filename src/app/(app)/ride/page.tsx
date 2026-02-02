@@ -331,7 +331,7 @@ export default function RideTrackingPage() {
                   </div>
                 </div>
                 <div className="h-64 md:h-full rounded-lg overflow-hidden">
-                    <RideRouteMap route={selectedRide.route} />
+                    <RideRouteMap route={selectedRide.route} showStartFinishMarkers={true} />
                 </div>
             </CardContent>
           </Card>
@@ -412,7 +412,7 @@ export default function RideTrackingPage() {
       ) : (
         <div className="flex-1 flex flex-col">
             <div className="relative flex-[2] rounded-lg overflow-hidden mb-4 border border-gray-700">
-                <RideRouteMap route={route} />
+                <RideRouteMap route={route} isLive={true} />
             </div>
             <div className="flex-1 grid grid-cols-3 gap-4 text-center mb-4">
                 <div><p className="text-sm text-gray-400">DISTANCE (KM)</p><p className="text-4xl font-bold font-mono tracking-tighter">{distance.toFixed(2)}</p></div>
