@@ -129,7 +129,7 @@ export default function LoginPage() {
       </CardHeader>
       <CardContent>
         <div className="grid gap-4">
-          <Button variant="outline" onClick={handleGoogleSignIn} disabled={isGoogleLoading}>
+          <Button variant="outline" onClick={handleGoogleSignIn} disabled={isGoogleLoading} suppressHydrationWarning>
             {isGoogleLoading ? (
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
             ) : (
@@ -145,7 +145,7 @@ export default function LoginPage() {
               <span className="bg-card px-2 text-muted-foreground">Or continue with</span>
             </div>
           </div>
-          <form onSubmit={handleEmailLogin} className="grid gap-4">
+          <form onSubmit={handleEmailLogin} className="grid gap-4" suppressHydrationWarning>
             <div className="grid gap-2">
               <Label htmlFor="email">Email</Label>
               <Input
@@ -167,7 +167,7 @@ export default function LoginPage() {
                 onChange={(e) => setPassword(e.target.value)}
               />
             </div>
-            <Button type="submit" className="w-full bg-primary hover:bg-primary/90 text-primary-foreground" disabled={isLoading}>
+            <Button type="submit" className="w-full bg-primary hover:bg-primary/90 text-primary-foreground" disabled={isLoading} suppressHydrationWarning>
               {isLoading ? <Loader2 className="animate-spin" /> : 'Login'}
             </Button>
           </form>
@@ -179,7 +179,7 @@ export default function LoginPage() {
           </Link>
         </div>
         <div className="mt-2 text-center text-sm">
-          <Button variant="link" className="text-muted-foreground" onClick={handleAnonymousSignIn}>
+          <Button variant="link" className="text-muted-foreground" onClick={handleAnonymousSignIn} suppressHydrationWarning>
             Continue without logging in
           </Button>
         </div>
