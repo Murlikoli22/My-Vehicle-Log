@@ -29,6 +29,6 @@ npm install -g firebase-tools
     Once you are logged in, run the following command from your project's root directory:
     ```bash
     firebase deploy --only apphosting
-    ```
+    ```D
 
 After the deployment is complete, the Firebase CLI will give you a public URL where your live application can be accessed.
