@@ -182,6 +182,13 @@
           "description": "URL of the user's profile picture.",
           "format": "uri"
         },
+        "fcmTokens": {
+          "type": "array",
+          "description": "Array of Firebase Cloud Messaging tokens for push notifications.",
+          "items": {
+            "type": "string"
+          }
+        },
         "emergencyContact": {
           "type": "object",
           "description": "The user's primary emergency contact.",

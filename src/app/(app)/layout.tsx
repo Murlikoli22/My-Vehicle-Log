@@ -1,5 +1,6 @@
 import { Header } from '@/components/header';
 import { BottomNav } from '@/components/bottom-nav';
+import { NotificationManager } from '@/components/NotificationManager';
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -9,6 +10,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         {children}
       </main>
       <BottomNav />
+      <NotificationManager />
     </div>
   );
 }

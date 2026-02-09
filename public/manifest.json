@@ -1,0 +1,8 @@
+{
+  "name": "MY Vehicle Log",
+  "short_name": "VehicleLog",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#222222"
+}

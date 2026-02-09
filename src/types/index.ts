@@ -49,6 +49,7 @@ export type UserProfile = {
   phone?: string;
   address?: string;
   photoURL?: string;
+  fcmTokens?: string[];
   emergencyContact?: {
     name: string;
     phone: string;
