@@ -6,7 +6,7 @@ To get started, take a look at src/app/page.tsx.
 
 ## Running Your Application
 
-This application is configured for deployment with Firebase App Hosting, which is a service designed to run web applications like this one. GitHub is used for storing your code, but a hosting service is needed to make it live.
+This application is configured for deployment with Firebase App Hosting and Cloud Functions for Firebase.
 
 ### Prerequisites
 
@@ -25,10 +25,27 @@ npm install -g firebase-tools
     ```
     This will open a browser window for you to log into your Google account.
 
-2.  **Deploy the Application**:
-    Once you are logged in, run the following command from your project's root directory:
+2.  **Deploy the Web Application (App Hosting)**:
+    To deploy your Next.js frontend, run the following command from your project's root directory:
     ```bash
     firebase deploy --only apphosting
-    ```D
+    ```
+    After deployment, the Firebase CLI will give you a public URL for your live application.
 
-After the deployment is complete, the Firebase CLI will give you a public URL where your live application can be accessed.
+3.  **Deploy Backend Cloud Functions**:
+    This project includes a backend Cloud Function for sending notifications. To deploy it, you need to install its dependencies and then deploy it.
+
+    Run the following commands from your project's root directory:
+
+    ```bash
+    # Install dependencies for the functions
+    npm install --prefix functions
+
+    # Deploy only the functions
+    firebase deploy --only functions
+    ```
+    
+    You can also deploy both the app and the functions at the same time by running:
+    ```bash
+    firebase deploy
+    ```
