@@ -46,12 +46,12 @@ export default function RegisterPage() {
   });
 
   useEffect(() => {
-    if (authUser) {
+    if (authUser && !authUser.isAnonymous) {
       router.push('/dashboard');
     }
   }, [authUser, router]);
 
-  if (authUser) {
+  if (authUser && !authUser.isAnonymous) {
     return null;
   }
 

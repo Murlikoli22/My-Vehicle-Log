@@ -53,12 +53,12 @@ export default function LoginPage() {
   const { user } = useUser();
 
   useEffect(() => {
-    if (user) {
+    if (user && !user.isAnonymous) {
       router.push('/dashboard');
     }
   }, [user, router]);
 
-  if (user) {
+  if (user && !user.isAnonymous) {
     return null;
   }
 
