@@ -1,6 +1,8 @@
 
+
 'use client';
 
+import Link from 'next/link';
 import { useUser, useFirestore, useDoc, useMemoFirebase, setDocumentNonBlocking } from '@/firebase';
 import { doc } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
@@ -71,11 +73,11 @@ export default function ProfilePage() {
             <CardDescription>Create an account or log in to manage your profile and unlock all features.</CardDescription>
           </CardHeader>
           <CardContent className="flex flex-col items-center justify-center gap-4 pt-6">
-            <Button size="lg" className="w-full" onClick={() => router.push('/login')}>
-              Login
+            <Button asChild size="lg" className="w-full">
+              <Link href="/login">Login</Link>
             </Button>
-            <Button variant="outline" size="lg" className="w-full" onClick={() => router.push('/register')}>
-              Sign Up
+            <Button asChild variant="outline" size="lg" className="w-full">
+              <Link href="/register">Sign Up</Link>
             </Button>
             <p className="text-sm text-muted-foreground mt-4">
               Creating an account lets you save your vehicles, documents, and preferences.
