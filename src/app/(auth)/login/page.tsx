@@ -1,11 +1,10 @@
-
 'use client';
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { GoogleAuthProvider, signInWithPopup, UserCredential } from 'firebase/auth';
-import { doc, setDoc, getDoc } from 'firebase/firestore';
+import { GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
+import { doc, getDoc } from 'firebase/firestore';
 import { Loader2 } from 'lucide-react';
 
 import { useAuth, useFirestore, useUser, initiateEmailSignIn, initiateAnonymousSignIn } from '@/firebase';
@@ -53,11 +52,13 @@ export default function LoginPage() {
   const { user } = useUser();
 
   useEffect(() => {
+    // If there is a user and they are NOT anonymous, then we redirect.
     if (user && !user.isAnonymous) {
       router.push('/dashboard');
     }
   }, [user, router]);
 
+  // If there is a user and they are not anonymous, we are about to redirect, so return null.
   if (user && !user.isAnonymous) {
     return null;
   }
@@ -94,6 +95,7 @@ export default function LoginPage() {
         title: 'Signed In!',
         description: 'You have been successfully signed in.',
       });
+      router.push('/dashboard');
     } catch (error: any) {
       console.error('Google Sign-In Error:', error);
       toast({
