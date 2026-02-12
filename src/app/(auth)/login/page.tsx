@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
+import { GoogleAuthProvider, signInWithRedirect, getRedirectResult } from 'firebase/auth';
 import { doc, getDoc } from 'firebase/firestore';
 import { Loader2 } from 'lucide-react';
 
@@ -52,60 +52,76 @@ export default function LoginPage() {
   const { user } = useUser();
 
   useEffect(() => {
-    // If there is a user and they are NOT anonymous, then we redirect.
+    // If there is a user and they are not anonymous, then we redirect.
+    // But if the user is anonymous, we allow them to stay.
     if (user && !user.isAnonymous) {
       router.push('/dashboard');
     }
   }, [user, router]);
+  
+  useEffect(() => {
+    const processRedirect = async () => {
+        // Set loading state only if we are not already logged in
+        if (!user) {
+            setGoogleLoading(true); 
+        }
+        try {
+            const result = await getRedirectResult(auth);
+            if (result) {
+                const user = result.user;
+                const userRef = doc(firestore, 'users', user.uid);
+                const userDoc = await getDoc(userRef);
+
+                if (!userDoc.exists()) {
+                    setDocumentNonBlocking(
+                        userRef,
+                        {
+                            id: user.uid,
+                            name: user.displayName,
+                            email: user.email,
+                            phone: user.phoneNumber || '',
+                            address: '',
+                            photoURL: user.photoURL || '',
+                            emergencyContact: { name: '', phone: '', relation: '' },
+                            medicalInfo: { bloodType: '', allergies: '', conditions: '' },
+                        },
+                        { merge: true }
+                    );
+                }
+
+                toast({
+                    title: 'Signed In!',
+                    description: 'You have been successfully signed in.',
+                });
+                router.push('/dashboard');
+            }
+        } catch (error: any) {
+            console.error('Google Sign-In Redirect Error:', error);
+            toast({
+                variant: 'destructive',
+                title: 'Sign In Failed',
+                description: error.message || 'Could not sign in with Google. Please try again.',
+            });
+        } finally {
+            setGoogleLoading(false);
+        }
+    };
+
+    if (auth && !user) {
+        processRedirect();
+    }
+  }, [auth, firestore, router, toast, user]);
+
 
   // If there is a user and they are not anonymous, we are about to redirect, so return null.
   if (user && !user.isAnonymous) {
     return null;
   }
 
-  const handleGoogleSignIn = async () => {
+  const handleGoogleSignIn = () => {
     setGoogleLoading(true);
     const provider = new GoogleAuthProvider();
-    try {
-      const userCredential = await signInWithPopup(auth, provider);
-      const user = userCredential.user;
-
-      // Check if user document exists, if not create it
-      const userRef = doc(firestore, 'users', user.uid);
-      const userDoc = await getDoc(userRef);
-
-      if (!userDoc.exists()) {
-        setDocumentNonBlocking(
-          userRef,
-          {
-            id: user.uid,
-            name: user.displayName,
-            email: user.email,
-            phone: user.phoneNumber || '',
-            address: '',
-            photoURL: user.photoURL || '',
-            emergencyContact: { name: '', phone: '', relation: '' },
-            medicalInfo: { bloodType: '', allergies: '', conditions: '' },
-          },
-          { merge: true }
-        );
-      }
-
-      toast({
-        title: 'Signed In!',
-        description: 'You have been successfully signed in.',
-      });
-      router.push('/dashboard');
-    } catch (error: any) {
-      console.error('Google Sign-In Error:', error);
-      toast({
-        variant: 'destructive',
-        title: 'Sign In Failed',
-        description: 'Could not sign in with Google. Please try again.',
-      });
-    } finally {
-      setGoogleLoading(false);
-    }
+    signInWithRedirect(auth, provider);
   };
 
   const handleEmailLogin = (e: React.FormEvent<HTMLFormElement>) => {
