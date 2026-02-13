@@ -21,7 +21,7 @@ import { format, parseISO } from 'date-fns';
 import type { Vehicle, VehicleDocument, MaintenanceRecord } from '@/types';
 import { cn } from '@/lib/utils';
 import { useUser, useFirestore, addDocumentNonBlocking, deleteDocumentNonBlocking, updateDocumentNonBlocking } from '@/firebase';
-import { collection, doc } from 'firebase/firestore';
+import { collection, doc, deleteField } from 'firebase/firestore';
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -237,6 +237,15 @@ export function VehicleManagement({
         console.error("Error converting file to data URL for bill", error);
     };
     e.target.value = '';
+  };
+  
+  const handleRemoveBillFromRecord = (recordId: string) => {
+    if (!user || !selectedVehicle) return;
+
+    const recordRef = doc(firestore, 'users', user.uid, 'vehicles', selectedVehicle.id, 'maintenanceLogs', recordId);
+    updateDocumentNonBlocking(recordRef, {
+      billUrl: deleteField()
+    });
   };
 
   const handleView = (dataUrl?: string) => {
@@ -594,6 +603,27 @@ export function VehicleManagement({
                                             <Download className="h-4 w-4" />
                                         </a>
                                     </Button>
+                                    <AlertDialog>
+                                      <AlertDialogTrigger asChild>
+                                        <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive" title="Delete bill">
+                                          <Trash2 className="h-4 w-4" />
+                                        </Button>
+                                      </AlertDialogTrigger>
+                                      <AlertDialogContent>
+                                        <AlertDialogHeader>
+                                          <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                                          <AlertDialogDescription>
+                                            This will permanently delete this bill photo. This action cannot be undone.
+                                          </AlertDialogDescription>
+                                        </AlertDialogHeader>
+                                        <AlertDialogFooter>
+                                          <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                          <AlertDialogAction onClick={() => handleRemoveBillFromRecord(record.id)} className="bg-destructive hover:bg-destructive/90">
+                                            Delete
+                                          </AlertDialogAction>
+                                        </AlertDialogFooter>
+                                      </AlertDialogContent>
+                                    </AlertDialog>
                                 </div>
                             ) : (
                               <>
