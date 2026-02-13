@@ -11,7 +11,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
-import { Calculator, Fuel, Route, Droplets, Gauge } from 'lucide-react';
+import { Calculator, Fuel, Route, Gauge } from 'lucide-react';
 import {
   Select,
   SelectContent,
@@ -36,11 +36,9 @@ export default function EstimateCostPage() {
   const [estimatedFuel, setEstimatedFuel] = useState<number | null>(null);
   const [selectedVehicleId, setSelectedVehicleId] = useState<string>('');
   
-  // State for Fuel Efficiency Calculator
+  // State for Distance Calculator
   const [lastOdometer, setLastOdometer] = useState('');
   const [currentOdometer, setCurrentOdometer] = useState('');
-  const [fuelConsumed, setFuelConsumed] = useState('');
-  const [calculatedEfficiency, setCalculatedEfficiency] = useState<number | null>(null);
   const [calculatedDistance, setCalculatedDistance] = useState<number | null>(null);
 
 
@@ -78,19 +76,15 @@ export default function EstimateCostPage() {
     }
   };
 
-  const calculateEfficiency = () => {
+  const calculateDistanceTravelled = () => {
     const last = parseFloat(lastOdometer);
     const current = parseFloat(currentOdometer);
-    const consumed = parseFloat(fuelConsumed);
 
-    if (current > last && consumed > 0) {
+    if (current > last) {
       const distance = current - last;
-      const efficiency = distance / consumed;
       setCalculatedDistance(distance);
-      setCalculatedEfficiency(efficiency);
     } else {
       setCalculatedDistance(null);
-      setCalculatedEfficiency(null);
     }
   };
 
@@ -103,14 +97,14 @@ export default function EstimateCostPage() {
           Estimators
         </CardTitle>
         <CardDescription>
-          Calculate your trip's fuel cost or your vehicle's fuel efficiency.
+          Calculate your trip's fuel cost or the distance you've traveled.
         </CardDescription>
       </CardHeader>
       <CardContent>
         <Tabs defaultValue="cost" className="w-full">
           <TabsList className="grid w-full grid-cols-2">
             <TabsTrigger value="cost">Trip Cost</TabsTrigger>
-            <TabsTrigger value="efficiency">Fuel Efficiency</TabsTrigger>
+            <TabsTrigger value="distance">Distance Calculator</TabsTrigger>
           </TabsList>
           
           <TabsContent value="cost" className="mt-6">
@@ -203,10 +197,10 @@ export default function EstimateCostPage() {
             </div>
           </TabsContent>
           
-          <TabsContent value="efficiency" className="mt-6">
+          <TabsContent value="distance" className="mt-6">
             <div className="space-y-6">
                <p className="text-sm text-muted-foreground">
-                Calculate your vehicle's fuel efficiency using odometer readings and fuel consumed.
+                Calculate the distance traveled between two odometer readings.
               </p>
               {vehicles && vehicles.length > 0 && (
                  <div className="grid gap-2">
@@ -228,10 +222,10 @@ export default function EstimateCostPage() {
                   </p>
                 </div>
               )}
-              <div className="grid sm:grid-cols-3 gap-4">
+              <div className="grid sm:grid-cols-2 gap-4">
                 <div className="grid gap-2">
                   <Label htmlFor="last-odometer" className="flex items-center gap-1.5">
-                    <Gauge className="h-4 w-4" /> Last Refuel (km)
+                    <Gauge className="h-4 w-4" /> Last Odometer (km)
                   </Label>
                   <Input
                     id="last-odometer"
@@ -253,39 +247,19 @@ export default function EstimateCostPage() {
                     onChange={(e) => setCurrentOdometer(e.target.value)}
                   />
                 </div>
-                <div className="grid gap-2">
-                  <Label htmlFor="fuel-consumed" className="flex items-center gap-1.5">
-                    <Droplets className="h-4 w-4" /> Fuel Consumed (L)
-                  </Label>
-                  <Input
-                    id="fuel-consumed"
-                    type="number"
-                    placeholder="e.g., 30"
-                    value={fuelConsumed}
-                    onChange={(e) => setFuelConsumed(e.target.value)}
-                  />
-                </div>
               </div>
-              <Button onClick={calculateEfficiency} className="w-full">
-                <Calculator className="mr-2 h-4 w-4" /> Calculate Fuel Efficiency
+              <Button onClick={calculateDistanceTravelled} className="w-full">
+                <Calculator className="mr-2 h-4 w-4" /> Calculate Distance
               </Button>
               
-              {calculatedEfficiency !== null && calculatedDistance !== null && (
+              {calculatedDistance !== null && (
                  <div className="bg-muted/50 p-6 rounded-lg">
-                  <div className="flex justify-around text-center w-full items-center">
+                  <div className="flex justify-center text-center w-full items-center">
                     <div>
                       <p className="text-sm text-muted-foreground">Distance Traveled</p>
                       <p className="text-3xl font-bold">
                         {calculatedDistance.toFixed(1)}
                         <span className="text-xl font-medium text-muted-foreground"> km</span>
-                      </p>
-                    </div>
-                    <div className="h-16 w-px bg-border mx-4" />
-                    <div>
-                      <p className="text-sm text-muted-foreground">Fuel Efficiency</p>
-                      <p className="text-3xl font-bold">
-                        {calculatedEfficiency.toFixed(2)}
-                        <span className="text-xl font-medium text-muted-foreground"> km/L</span>
                       </p>
                     </div>
                   </div>
