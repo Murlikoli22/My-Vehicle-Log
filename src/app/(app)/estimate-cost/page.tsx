@@ -12,7 +12,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
-import { Calculator, Fuel, Route } from 'lucide-react';
+import { Calculator, Fuel, Route, Gauge } from 'lucide-react';
 import {
   Select,
   SelectContent,
@@ -38,9 +38,11 @@ export default function EstimateCostPage() {
   const [selectedVehicleId, setSelectedVehicleId] = useState<string>('');
   
   // State for Fuel Efficiency Calculator
-  const [efficiencyDistance, setEfficiencyDistance] = useState('');
+  const [currentOdometer, setCurrentOdometer] = useState('');
+  const [previousOdometer, setPreviousOdometer] = useState('');
   const [fuelConsumed, setFuelConsumed] = useState('');
   const [calculatedEfficiency, setCalculatedEfficiency] = useState<number | null>(null);
+  const [calculatedDistance, setCalculatedDistance] = useState<number | null>(null);
 
 
   const vehiclesQuery = useMemoFirebase(() => {
@@ -71,13 +73,17 @@ export default function EstimateCostPage() {
   };
 
   const calculateFuelEfficiency = () => {
-    const dist = parseFloat(efficiencyDistance);
+    const current = parseFloat(currentOdometer);
+    const previous = parseFloat(previousOdometer);
     const consumed = parseFloat(fuelConsumed);
 
-    if (dist > 0 && consumed > 0) {
-      const efficiency = dist / consumed;
+    if (current > previous && consumed > 0) {
+      const distance = current - previous;
+      const efficiency = distance / consumed;
+      setCalculatedDistance(distance);
       setCalculatedEfficiency(efficiency);
     } else {
+      setCalculatedDistance(null);
       setCalculatedEfficiency(null);
     }
   };
@@ -193,44 +199,67 @@ export default function EstimateCostPage() {
           
           <TabsContent value="efficiency" className="mt-6">
             <div className="space-y-6">
-               <p className="text-sm text-muted-foreground">
-                Calculate your vehicle's fuel efficiency based on distance traveled and fuel consumed.
+              <p className="text-sm text-muted-foreground">
+                Calculate your vehicle's fuel efficiency by entering odometer readings from two fill-ups.
               </p>
               <div className="grid sm:grid-cols-2 gap-4">
                 <div className="grid gap-2">
-                  <Label htmlFor="efficiency-distance" className="flex items-center gap-1.5">
-                    <Route className="h-4 w-4" /> Distance Traveled (km)
+                  <Label htmlFor="current-odometer" className="flex items-center gap-1.5">
+                    <Gauge className="h-4 w-4" /> Current Odometer (km)
                   </Label>
                   <Input
-                    id="efficiency-distance"
+                    id="current-odometer"
                     type="number"
-                    placeholder="e.g., 450"
-                    value={efficiencyDistance}
-                    onChange={(e) => setEfficiencyDistance(e.target.value)}
+                    placeholder="e.g., 25450"
+                    value={currentOdometer}
+                    onChange={(e) => setCurrentOdometer(e.target.value)}
                   />
                 </div>
-                 <div className="grid gap-2">
-                  <Label htmlFor="fuel-consumed" className="flex items-center gap-1.5">
-                    <Fuel className="h-4 w-4" /> Fuel Consumed (L)
+                <div className="grid gap-2">
+                  <Label htmlFor="previous-odometer" className="flex items-center gap-1.5">
+                    <Gauge className="h-4 w-4" /> Previous Odometer (km)
                   </Label>
                   <Input
-                    id="fuel-consumed"
+                    id="previous-odometer"
                     type="number"
-                    placeholder="e.g., 30"
-                    value={fuelConsumed}
-                    onChange={(e) => setFuelConsumed(e.target.value)}
+                    placeholder="e.g., 25000"
+                    value={previousOdometer}
+                    onChange={(e) => setPreviousOdometer(e.target.value)}
                   />
                 </div>
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="fuel-consumed" className="flex items-center gap-1.5">
+                  <Fuel className="h-4 w-4" /> Fuel Consumed (L)
+                </Label>
+                <Input
+                  id="fuel-consumed"
+                  type="number"
+                  placeholder="e.g., 30"
+                  value={fuelConsumed}
+                  onChange={(e) => setFuelConsumed(e.target.value)}
+                />
+                <p className="text-xs text-muted-foreground">
+                  Enter the amount of fuel added during the *previous* fill-up.
+                </p>
               </div>
               <Button onClick={calculateFuelEfficiency} className="w-full">
                 <Calculator className="mr-2 h-4 w-4" /> Calculate Fuel Efficiency
               </Button>
               
-              {calculatedEfficiency !== null && (
-                 <div className="bg-muted/50 p-6 rounded-lg">
-                  <div className="flex justify-center text-center w-full items-center">
+              {calculatedDistance !== null && calculatedEfficiency !== null && (
+                <div className="bg-muted/50 p-6 rounded-lg">
+                  <div className="flex justify-around text-center w-full items-center">
                     <div>
-                      <p className="text-sm text-muted-foreground">Calculated Fuel Efficiency</p>
+                      <p className="text-sm text-muted-foreground">Distance Traveled</p>
+                      <p className="text-3xl font-bold">
+                        {calculatedDistance.toFixed(1)}
+                        <span className="text-xl font-medium text-muted-foreground"> km</span>
+                      </p>
+                    </div>
+                    <div className="h-16 w-px bg-border mx-4" />
+                    <div>
+                      <p className="text-sm text-muted-foreground">Fuel Efficiency</p>
                       <p className="text-3xl font-bold">
                         {calculatedEfficiency.toFixed(2)}
                         <span className="text-xl font-medium text-muted-foreground"> km/L</span>
