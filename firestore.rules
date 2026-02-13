@@ -190,7 +190,7 @@ service cloud.firestore {
         match /fuelEntries/{fuelEntryId} {
           allow get: if isOwner(userId);
           allow list: if isOwner(userId);
-          allow create: if isOwner(userId) && hasCorrectOwnerIdOnCreate(userId) && request.resource.data.vehicleId == vehicleId;
+          allow create: if isOwner(userId) && hasCorrectOwnerIdOnCreate(userId) && hasCorrectVehicleIdOnCreate(vehicleId);
           allow update: if isExistingOwner(userId) && isUserIdImmutable() && isVehicleIdImmutable();
           allow delete: if isExistingOwner(userId);
         }
