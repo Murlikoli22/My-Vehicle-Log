@@ -239,9 +239,6 @@ export default function EstimateCostPage() {
                   value={fuelConsumed}
                   onChange={(e) => setFuelConsumed(e.target.value)}
                 />
-                <p className="text-xs text-muted-foreground">
-                  Enter the amount of fuel added during the *previous* fill-up.
-                </p>
               </div>
               <Button onClick={calculateFuelEfficiency} className="w-full">
                 <Calculator className="mr-2 h-4 w-4" /> Calculate Fuel Efficiency
@@ -249,20 +246,12 @@ export default function EstimateCostPage() {
               
               {calculatedDistance !== null && calculatedEfficiency !== null && (
                 <div className="bg-muted/50 p-6 rounded-lg">
-                  <div className="flex justify-around text-center w-full items-center">
+                  <div className="flex justify-center text-center w-full items-center">
                     <div>
                       <p className="text-sm text-muted-foreground">Distance Traveled</p>
                       <p className="text-3xl font-bold">
                         {calculatedDistance.toFixed(1)}
                         <span className="text-xl font-medium text-muted-foreground"> km</span>
-                      </p>
-                    </div>
-                    <div className="h-16 w-px bg-border mx-4" />
-                    <div>
-                      <p className="text-sm text-muted-foreground">Fuel Efficiency</p>
-                      <p className="text-3xl font-bold">
-                        {calculatedEfficiency.toFixed(2)}
-                        <span className="text-xl font-medium text-muted-foreground"> km/L</span>
                       </p>
                     </div>
                   </div>
