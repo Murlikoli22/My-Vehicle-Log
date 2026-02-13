@@ -3,13 +3,12 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { LayoutDashboard, Car, ShieldAlert, Fuel } from 'lucide-react';
+import { LayoutDashboard, Car, ShieldAlert } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const navItems = [
   { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { href: '/vehicles', label: 'Vehicles', icon: Car },
-  { href: '/fuel', label: 'Fuel', icon: Fuel },
   { href: '/emergency', label: 'Emergency', icon: ShieldAlert },
 ];
 
@@ -18,7 +17,7 @@ export function BottomNav() {
 
   return (
     <div className="fixed bottom-0 left-0 z-50 w-full h-16 border-t bg-card text-card-foreground md:hidden">
-      <div className="grid h-full max-w-lg grid-cols-4 mx-auto font-medium">
+      <div className="grid h-full max-w-lg grid-cols-3 mx-auto font-medium">
         {navItems.map((item) => (
           <Link
             key={item.href}
