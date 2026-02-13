@@ -79,6 +79,7 @@ export default function RegisterPage() {
         phone: '',
         address: '',
         photoURL: '',
+        drivingLicenseUrl: '',
         emergencyContact: { name: '', phone: '', relation: '' },
         medicalInfo: { bloodType: '', allergies: '', conditions: '' },
       }, { merge: true });
