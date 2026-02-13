@@ -90,7 +90,7 @@ export function VehicleManagement({
   const [isAddVehicleOpen, setAddVehicleOpen] = useState(false);
   const [isAddDocOpen, setAddDocOpen] = useState(false);
   const [isAddMaintOpen, setAddMaintOpen] = useState(false);
-  const [viewingFile, setViewingFile] = useState<{url: string, type: string} | null>(null);
+  const [viewingFile, setViewingFile] = useState<{url: string, type: string, context?: { type: 'bill', recordId: string } | { type: 'document', documentId: string }} | null>(null);
   const detailsRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -242,7 +242,7 @@ export function VehicleManagement({
     });
   };
 
-  const handleView = (dataUrl?: string) => {
+  const handleView = (dataUrl?: string, context?: { type: 'bill', recordId: string } | { type: 'document', documentId: string }) => {
     if (!dataUrl) return;
 
     const [header, base64Data] = dataUrl.split(',');
@@ -261,7 +261,7 @@ export function VehicleManagement({
       }
       const blob = new Blob([ab], { type: mimeString });
       const url = URL.createObjectURL(blob);
-      setViewingFile({ url, type: mimeString });
+      setViewingFile({ url, type: mimeString, context });
     } catch (e) {
       console.error("Failed to decode and open data URL", e);
     }
@@ -500,7 +500,7 @@ export function VehicleManagement({
                             <div className="flex items-center justify-end gap-1">
                                 {documentItem.fileUrl && (
                                   <>
-                                      <Button variant="ghost" size="icon" onClick={() => handleView(documentItem.fileUrl)} title="View document">
+                                      <Button variant="ghost" size="icon" onClick={() => handleView(documentItem.fileUrl, { type: 'document', documentId: documentItem.id })} title="View document">
                                         <Eye className="h-4 w-4" />
                                       </Button>
                                       <Button variant="ghost" size="icon" asChild>
@@ -588,7 +588,7 @@ export function VehicleManagement({
                           <TableCell>
                             {record.billUrl ? (
                                 <div className="flex items-center justify-start gap-1">
-                                    <Button variant="ghost" size="icon" onClick={() => handleView(record.billUrl)} title="View bill">
+                                    <Button variant="ghost" size="icon" onClick={() => handleView(record.billUrl, { type: 'bill', recordId: record.id })} title="View bill">
                                         <Eye className="h-4 w-4" />
                                     </Button>
                                     <Button variant="ghost" size="icon" asChild>
@@ -596,27 +596,6 @@ export function VehicleManagement({
                                             <Download className="h-4 w-4" />
                                         </a>
                                     </Button>
-                                    <AlertDialog>
-                                      <AlertDialogTrigger asChild>
-                                        <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive" title="Delete bill">
-                                          <Trash2 className="h-4 w-4" />
-                                        </Button>
-                                      </AlertDialogTrigger>
-                                      <AlertDialogContent>
-                                        <AlertDialogHeader>
-                                          <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-                                          <AlertDialogDescription>
-                                            This will permanently delete this bill photo. This action cannot be undone.
-                                          </AlertDialogDescription>
-                                        </AlertDialogHeader>
-                                        <AlertDialogFooter>
-                                          <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                          <AlertDialogAction onClick={() => handleRemoveBillFromRecord(record.id)} className="bg-destructive hover:bg-destructive/90">
-                                            Delete
-                                          </AlertDialogAction>
-                                        </AlertDialogFooter>
-                                      </AlertDialogContent>
-                                    </AlertDialog>
                                 </div>
                             ) : (
                               <>
@@ -681,6 +660,35 @@ export function VehicleManagement({
             )}
           </div>
           <DialogFooter>
+             {viewingFile?.context?.type === 'bill' && (
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button variant="destructive">Delete Bill</Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      This will permanently delete this bill photo. This action cannot be undone.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogAction
+                      onClick={() => {
+                        if (viewingFile?.context?.type === 'bill') {
+                          handleRemoveBillFromRecord(viewingFile.context.recordId);
+                        }
+                        setViewingFile(null);
+                      }}
+                      className="bg-destructive hover:bg-destructive/90"
+                    >
+                      Delete
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            )}
             <DialogClose asChild>
               <Button variant="outline">Close</Button>
             </DialogClose>
