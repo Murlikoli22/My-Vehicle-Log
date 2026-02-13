@@ -91,6 +91,7 @@ export function VehicleManagement({
   const [isAddDocOpen, setAddDocOpen] = useState(false);
   const [isAddMaintOpen, setAddMaintOpen] = useState(false);
   const [viewingFile, setViewingFile] = useState<{url: string, type: string} | null>(null);
+  const detailsRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (initialVehicles.length > 0) {
@@ -108,10 +109,19 @@ export function VehicleManagement({
     } else {
       setSelectedVehicle(null);
     }
-  }, [initialVehicles]);
+  }, [initialVehicles, selectedVehicle?.id]);
 
   const { user } = useUser();
   const firestore = useFirestore();
+
+  const handleVehicleSelect = (vehicle: Vehicle) => {
+    setSelectedVehicle(vehicle);
+    if (window.innerWidth < 768) { // md breakpoint
+      setTimeout(() => {
+        detailsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }, 100);
+    }
+  };
 
   const getVehicleDocuments = (vehicleId: string) =>
     initialDocuments.filter((doc) => doc.vehicleId === vehicleId);
@@ -252,7 +262,7 @@ export function VehicleManagement({
 
   return (
     <>
-      <div className="grid md:grid-cols-[320px_1fr] gap-8">
+      <div className="grid grid-cols-1 md:grid-cols-[320px_1fr] gap-8">
         <div className="flex flex-col gap-4">
           <div className="flex items-center justify-between">
               <h2 className="text-xl font-bold">My Garage</h2>
@@ -279,7 +289,7 @@ export function VehicleManagement({
               {initialVehicles.map((vehicle) => (
                  <Card
                     key={vehicle.id}
-                    onClick={() => setSelectedVehicle(vehicle)}
+                    onClick={() => handleVehicleSelect(vehicle)}
                     className={cn(
                         "cursor-pointer transition-all hover:shadow-md",
                         selectedVehicle?.id === vehicle.id ? "ring-2 ring-primary" : "hover:bg-muted/50"
@@ -340,7 +350,7 @@ export function VehicleManagement({
         </div>
 
         {selectedVehicle ? (
-          <Tabs defaultValue="details" className="md:block hidden">
+          <Tabs defaultValue="details" className="w-full" ref={detailsRef}>
             <div className="flex items-start justify-between gap-4">
               <div className="flex items-center gap-4">
                   <div className="relative h-20 w-20 rounded-lg overflow-hidden shrink-0 group/image">
@@ -367,12 +377,17 @@ export function VehicleManagement({
                       <p className="text-muted-foreground">{selectedVehicle.registrationNumber}</p>
                   </div>
               </div>
-              <TabsList>
+              <TabsList className="hidden md:inline-flex">
                 <TabsTrigger value="details">Details</TabsTrigger>
                 <TabsTrigger value="documents">Documents</TabsTrigger>
                 <TabsTrigger value="maintenance">Maintenance</TabsTrigger>
               </TabsList>
             </div>
+             <TabsList className="grid w-full grid-cols-3 mt-4 md:hidden">
+                <TabsTrigger value="details">Details</TabsTrigger>
+                <TabsTrigger value="documents">Documents</TabsTrigger>
+                <TabsTrigger value="maintenance">Maintenance</TabsTrigger>
+              </TabsList>
 
             <TabsContent value="details" className="mt-6">
               <Card>
