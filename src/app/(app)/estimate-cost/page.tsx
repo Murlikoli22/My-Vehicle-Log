@@ -77,11 +77,16 @@ export default function EstimateCostPage() {
     const previous = parseFloat(previousOdometer);
     const consumed = parseFloat(fuelConsumed);
 
-    if (current > previous && consumed > 0) {
+    if (current > previous) {
       const distance = current - previous;
-      const efficiency = distance / consumed;
       setCalculatedDistance(distance);
-      setCalculatedEfficiency(efficiency);
+
+      if (consumed > 0) {
+        const efficiency = distance / consumed;
+        setCalculatedEfficiency(efficiency);
+      } else {
+        setCalculatedEfficiency(null);
+      }
     } else {
       setCalculatedDistance(null);
       setCalculatedEfficiency(null);
@@ -230,7 +235,7 @@ export default function EstimateCostPage() {
               </div>
               <div className="grid gap-2">
                 <Label htmlFor="fuel-consumed" className="flex items-center gap-1.5">
-                  <Fuel className="h-4 w-4" /> Fuel Consumed (L)
+                  <Fuel className="h-4 w-4" /> Fuel Consumed (L, Optional)
                 </Label>
                 <Input
                   id="fuel-consumed"
@@ -241,12 +246,12 @@ export default function EstimateCostPage() {
                 />
               </div>
               <Button onClick={calculateFuelEfficiency} className="w-full">
-                <Calculator className="mr-2 h-4 w-4" /> Calculate Fuel Efficiency
+                <Calculator className="mr-2 h-4 w-4" /> Calculate
               </Button>
               
-              {calculatedDistance !== null && calculatedEfficiency !== null && (
+              {calculatedDistance !== null && (
                 <div className="bg-muted/50 p-6 rounded-lg">
-                  <div className="flex justify-center text-center w-full items-center">
+                  <div className="flex justify-around text-center w-full items-center">
                     <div>
                       <p className="text-sm text-muted-foreground">Distance Traveled</p>
                       <p className="text-3xl font-bold">
@@ -254,6 +259,18 @@ export default function EstimateCostPage() {
                         <span className="text-xl font-medium text-muted-foreground"> km</span>
                       </p>
                     </div>
+                    {calculatedEfficiency !== null && (
+                        <>
+                            <div className="h-16 w-px bg-border mx-4" />
+                            <div>
+                                <p className="text-sm text-muted-foreground">Fuel Efficiency</p>
+                                <p className="text-3xl font-bold">
+                                    {calculatedEfficiency.toFixed(2)}
+                                    <span className="text-xl font-medium text-muted-foreground"> km/L</span>
+                                </p>
+                            </div>
+                        </>
+                    )}
                   </div>
                 </div>
               )}
