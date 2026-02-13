@@ -188,7 +188,8 @@ service cloud.firestore {
          * @principle Inherits ownership from the parent path, ensuring only the vehicle owner can manage fuel entries.
          */
         match /fuelEntries/{fuelEntryId} {
-          allow read: if isOwner(userId);
+          allow get: if isOwner(userId);
+          allow list: if isOwner(userId);
           allow create: if isOwner(userId) && hasCorrectOwnerIdOnCreate(userId) && hasCorrectVehicleIdOnCreate(vehicleId);
           allow update: if isExistingOwner(userId) && isUserIdImmutable() && isVehicleIdImmutable();
           allow delete: if isExistingOwner(userId);
