@@ -29,7 +29,7 @@ export default function LandingPage() {
   return (
     <div className="flex min-h-screen flex-col bg-background">
       <header className="absolute top-0 left-0 w-full z-20 p-4">
-        <AppLogo textClassName='text-white'/>
+        <AppLogo />
       </header>
       <main className="flex-1">
         <section className="relative flex h-[60vh] flex-col items-center justify-center text-center text-white">
