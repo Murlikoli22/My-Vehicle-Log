@@ -49,7 +49,7 @@ export type UserProfile = {
   phone?: string;
   address?: string;
   photoURL?: string;
-  drivingLicenseUrl?: string;
+  drivingLicenseUrls?: string[];
   fcmTokens?: string[];
   emergencyContact?: {
     name: string;
@@ -62,4 +62,5 @@ export type UserProfile = {
     conditions: string;
   };
 };
+
 

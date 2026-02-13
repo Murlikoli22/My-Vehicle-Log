@@ -6,7 +6,7 @@ import Image from 'next/image';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { Loader2, Camera, Eye } from 'lucide-react';
+import { Loader2, Camera, Eye, Trash2, ChevronDown, ChevronUp } from 'lucide-react';
 
 import type { UserProfile } from '@/types';
 import { Button } from '@/components/ui/button';
@@ -24,13 +24,14 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from './ui/
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
 import { Textarea } from './ui/textarea';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose } from './ui/dialog';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from './ui/collapsible';
+import { useToast } from '@/hooks/use-toast';
 
 const profileFormSchema = z.object({
   name: z.string().min(2, 'Name must be at least 2 characters.'),
   phone: z.string().optional(),
   address: z.string().optional(),
   image: z.instanceof(File).optional(),
-  drivingLicense: z.instanceof(File).optional(),
   emergencyContact: z.object({
     name: z.string().optional(),
     phone: z.string().optional(),
@@ -52,8 +53,10 @@ interface ProfileFormProps {
 
 export function ProfileForm({ userProfile, onSubmit }: ProfileFormProps) {
   const [avatarPreview, setAvatarPreview] = useState<string | null>(userProfile.photoURL || null);
-  const [licensePreview, setLicensePreview] = useState<string | null>(userProfile.drivingLicenseUrl || null);
-  const [isViewingLicense, setIsViewingLicense] = useState(false);
+  const [licensePreviews, setLicensePreviews] = useState<string[]>(userProfile.drivingLicenseUrls || []);
+  const [isGalleryVisible, setIsGalleryVisible] = useState(true);
+  const [viewingImage, setViewingImage] = useState<string | null>(null);
+  const { toast } = useToast();
 
   const form = useForm<FormValues>({
     resolver: zodResolver(profileFormSchema),
@@ -77,8 +80,11 @@ export function ProfileForm({ userProfile, onSubmit }: ProfileFormProps) {
   const { isSubmitting } = form.formState;
 
   const handleFormSubmit = async (data: FormValues) => {
-    const { image, drivingLicense, ...rest } = data;
-    const payload: Partial<UserProfile> = { ...rest };
+    const { image, ...rest } = data;
+    const payload: Partial<UserProfile> = { 
+      ...rest,
+      drivingLicenseUrls: licensePreviews,
+    };
   
     if (image) {
       try {
@@ -90,24 +96,8 @@ export function ProfileForm({ userProfile, onSubmit }: ProfileFormProps) {
         });
         payload.photoURL = photoURL;
       } catch (error) {
-        console.error("Error converting file to data URL", error);
-        form.setError('image', { type: 'manual', message: 'Could not upload file.' });
-        return;
-      }
-    }
-
-    if (drivingLicense) {
-      try {
-        const drivingLicenseUrl: string = await new Promise((resolve, reject) => {
-          const reader = new FileReader();
-          reader.onload = e => resolve(e.target?.result as string);
-          reader.onerror = error => reject(error);
-          reader.readAsDataURL(drivingLicense);
-        });
-        payload.drivingLicenseUrl = drivingLicenseUrl;
-      } catch (error) {
-        console.error("Error converting license file to data URL", error);
-        form.setError('drivingLicense', { type: 'manual', message: 'Could not upload file.' });
+        console.error("Error converting profile photo to data URL", error);
+        form.setError('image', { type: 'manual', message: 'Could not upload photo.' });
         return;
       }
     }
@@ -127,17 +117,35 @@ export function ProfileForm({ userProfile, onSubmit }: ProfileFormProps) {
     }
   };
 
-  const handleLicenseFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (file) {
-      form.setValue('drivingLicense', file);
+  const handleLicenseFilesChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = event.target.files;
+    if (!files) return;
+
+    if (licensePreviews.length + files.length > 10) {
+      toast({
+        variant: "destructive",
+        title: "Upload Limit Exceeded",
+        description: "You can upload a maximum of 10 images.",
+      });
+      return;
+    }
+
+    Array.from(files).forEach(file => {
       const reader = new FileReader();
       reader.onload = (e) => {
-        setLicensePreview(e.target?.result as string);
+        setLicensePreviews(prev => [...prev, e.target?.result as string]);
       };
       reader.readAsDataURL(file);
-    }
+    });
+
+    // Reset the file input so the same file can be selected again if removed
+    event.target.value = '';
   };
+
+  const handleRemoveLicense = (indexToRemove: number) => {
+    setLicensePreviews(prev => prev.filter((_, index) => index !== indexToRemove));
+  };
+
 
   return (
     <>
@@ -182,49 +190,65 @@ export function ProfileForm({ userProfile, onSubmit }: ProfileFormProps) {
           
           <Card>
             <CardHeader>
-                <CardTitle>Driving License</CardTitle>
-                <CardDescription>Upload a clear image of your driving license.</CardDescription>
+              <CardTitle>Driving License</CardTitle>
+              <CardDescription>Upload one or more images of your driving license (max 10).</CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4">
-                {licensePreview && (
-                    <div className="relative w-full h-48 rounded-md border overflow-hidden">
-                        <Image src={licensePreview} alt="Driving license preview" fill style={{ objectFit: 'contain' }} />
-                    </div>
-                )}
-                <div className="flex items-center gap-4">
-                    <FormField
-                      control={form.control}
-                      name="drivingLicense"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel
-                            htmlFor="license-upload"
-                            className="cursor-pointer inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-10 px-4 py-2"
-                          >
-                            <Camera className="mr-2 h-4 w-4" />
-                            {licensePreview ? 'Change License' : 'Upload License'}
-                          </FormLabel>
-                          <FormControl>
-                            <Input
-                              id="license-upload"
-                              type="file"
-                              accept="image/*"
-                              className="hidden"
-                              onChange={handleLicenseFileChange}
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    {(userProfile.drivingLicenseUrl || licensePreview) && (
-                        <Button type="button" variant="outline" onClick={() => setIsViewingLicense(true)}>
-                            <Eye className="mr-2 h-4 w-4" /> View
-                        </Button>
-                    )}
+            <CardContent>
+              <Collapsible open={isGalleryVisible} onOpenChange={setIsGalleryVisible} className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <p className="text-sm text-muted-foreground">{licensePreviews.length} image(s) uploaded</p>
+                  <CollapsibleTrigger asChild>
+                    <Button variant="ghost" size="sm" className="w-24">
+                      {isGalleryVisible ? 'Hide' : 'Show'}
+                      {isGalleryVisible ? <ChevronUp className="h-4 w-4 ml-2" /> : <ChevronDown className="h-4 w-4 ml-2" />}
+                    </Button>
+                  </CollapsibleTrigger>
                 </div>
+                <CollapsibleContent>
+                  {licensePreviews.length > 0 ? (
+                    <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2">
+                      {licensePreviews.map((src, index) => (
+                        <div key={index} className="relative group aspect-video rounded-md border overflow-hidden">
+                          <Image src={src} alt={`License image ${index + 1}`} fill sizes="(max-width: 768px) 33vw, 20vw" style={{ objectFit: 'cover' }} />
+                          <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+                            <Button variant="ghost" size="icon" className="h-8 w-8 text-white" onClick={() => setViewingImage(src)}>
+                              <Eye className="h-4 w-4" />
+                            </Button>
+                            <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => handleRemoveLicense(index)}>
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="flex flex-col items-center justify-center text-center text-muted-foreground border-2 border-dashed rounded-lg p-8">
+                       <Camera className="h-8 w-8 mb-2" />
+                       <p>No license images uploaded yet.</p>
+                    </div>
+                  )}
+                </CollapsibleContent>
+              </Collapsible>
+              <div className="mt-4">
+                <FormLabel
+                  htmlFor="license-upload"
+                  className="cursor-pointer inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-10 px-4 py-2"
+                >
+                  <Camera className="mr-2 h-4 w-4" />
+                  Add Images
+                </FormLabel>
+                <Input
+                  id="license-upload"
+                  type="file"
+                  accept="image/*"
+                  multiple
+                  className="hidden"
+                  onChange={handleLicenseFilesChange}
+                  disabled={licensePreviews.length >= 10}
+                />
+              </div>
             </CardContent>
-        </Card>
+          </Card>
 
           <Card>
             <CardHeader>
@@ -387,14 +411,14 @@ export function ProfileForm({ userProfile, onSubmit }: ProfileFormProps) {
           </Button>
         </form>
       </Form>
-      <Dialog open={isViewingLicense} onOpenChange={setIsViewingLicense}>
+      <Dialog open={!!viewingImage} onOpenChange={(isOpen) => !isOpen && setViewingImage(null)}>
         <DialogContent className="max-w-3xl h-[90vh] flex flex-col">
           <DialogHeader>
-            <DialogTitle>Driving License</DialogTitle>
+            <DialogTitle>License Viewer</DialogTitle>
           </DialogHeader>
           <div className="relative flex-1 my-4">
-            {licensePreview && (
-                <Image src={licensePreview} alt="Driving license" fill style={{ objectFit: 'contain' }} />
+            {viewingImage && (
+                <Image src={viewingImage} alt="Driving license" fill style={{ objectFit: 'contain' }} />
             )}
           </div>
           <DialogFooter>
