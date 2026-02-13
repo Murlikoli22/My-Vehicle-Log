@@ -11,7 +11,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
-import { Calculator, Fuel, Route, Droplets } from 'lucide-react';
+import { Calculator, Fuel, Route, Droplets, Gauge } from 'lucide-react';
 import {
   Select,
   SelectContent,
@@ -37,9 +37,12 @@ export default function EstimateCostPage() {
   const [selectedVehicleId, setSelectedVehicleId] = useState<string>('');
   
   // State for Fuel Efficiency Calculator
-  const [efficiencyDistance, setEfficiencyDistance] = useState('');
+  const [lastOdometer, setLastOdometer] = useState('');
+  const [currentOdometer, setCurrentOdometer] = useState('');
   const [fuelConsumed, setFuelConsumed] = useState('');
   const [calculatedEfficiency, setCalculatedEfficiency] = useState<number | null>(null);
+  const [calculatedDistance, setCalculatedDistance] = useState<number | null>(null);
+
 
   const vehiclesQuery = useMemoFirebase(() => {
     if (!user) return null;
@@ -50,6 +53,13 @@ export default function EstimateCostPage() {
 
   const handleVehicleSelect = (vehicleId: string) => {
     setSelectedVehicleId(vehicleId);
+  };
+
+  const handleEfficiencyVehicleSelect = (vehicleId: string) => {
+    const selectedVehicle = vehicles?.find(v => v.id === vehicleId);
+    if (selectedVehicle) {
+        setCurrentOdometer(selectedVehicle.odometerReading.toString());
+    }
   };
 
   const calculateCost = () => {
@@ -69,13 +79,17 @@ export default function EstimateCostPage() {
   };
 
   const calculateEfficiency = () => {
-    const dist = parseFloat(efficiencyDistance);
+    const last = parseFloat(lastOdometer);
+    const current = parseFloat(currentOdometer);
     const consumed = parseFloat(fuelConsumed);
 
-    if (dist > 0 && consumed > 0) {
-      const efficiency = dist / consumed;
+    if (current > last && consumed > 0) {
+      const distance = current - last;
+      const efficiency = distance / consumed;
+      setCalculatedDistance(distance);
       setCalculatedEfficiency(efficiency);
     } else {
+      setCalculatedDistance(null);
       setCalculatedEfficiency(null);
     }
   };
@@ -191,20 +205,52 @@ export default function EstimateCostPage() {
           
           <TabsContent value="efficiency" className="mt-6">
             <div className="space-y-6">
-              <p className="text-sm text-muted-foreground">
-                Calculate your vehicle's fuel efficiency based on distance traveled and fuel consumed.
+               <p className="text-sm text-muted-foreground">
+                Calculate your vehicle's fuel efficiency using odometer readings and fuel consumed.
               </p>
-              <div className="grid sm:grid-cols-2 gap-4">
+              {vehicles && vehicles.length > 0 && (
+                 <div className="grid gap-2">
+                  <Label htmlFor="eff-vehicle-select">Select a Vehicle (Optional)</Label>
+                  <Select onValueChange={handleEfficiencyVehicleSelect}>
+                    <SelectTrigger id="eff-vehicle-select">
+                      <SelectValue placeholder="Choose from your garage" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {vehicles.map(vehicle => (
+                        <SelectItem key={vehicle.id} value={vehicle.id}>
+                          {vehicle.brand} {vehicle.model} ({vehicle.registrationNumber})
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <p className="text-xs text-muted-foreground">
+                    Selecting a vehicle will pre-fill the current odometer reading.
+                  </p>
+                </div>
+              )}
+              <div className="grid sm:grid-cols-3 gap-4">
                 <div className="grid gap-2">
-                  <Label htmlFor="efficiency-distance" className="flex items-center gap-1.5">
-                    <Route className="h-4 w-4" /> Distance Traveled (km)
+                  <Label htmlFor="last-odometer" className="flex items-center gap-1.5">
+                    <Gauge className="h-4 w-4" /> Last Refuel (km)
                   </Label>
                   <Input
-                    id="efficiency-distance"
+                    id="last-odometer"
                     type="number"
-                    placeholder="e.g., 450"
-                    value={efficiencyDistance}
-                    onChange={(e) => setEfficiencyDistance(e.target.value)}
+                    placeholder="e.g., 25000"
+                    value={lastOdometer}
+                    onChange={(e) => setLastOdometer(e.target.value)}
+                  />
+                </div>
+                 <div className="grid gap-2">
+                  <Label htmlFor="current-odometer" className="flex items-center gap-1.5">
+                    <Gauge className="h-4 w-4" /> Current Odometer (km)
+                  </Label>
+                  <Input
+                    id="current-odometer"
+                    type="number"
+                    placeholder="e.g., 25450"
+                    value={currentOdometer}
+                    onChange={(e) => setCurrentOdometer(e.target.value)}
                   />
                 </div>
                 <div className="grid gap-2">
@@ -224,14 +270,24 @@ export default function EstimateCostPage() {
                 <Calculator className="mr-2 h-4 w-4" /> Calculate Fuel Efficiency
               </Button>
               
-              {calculatedEfficiency !== null && (
-                <div className="bg-muted/50 p-6 rounded-lg">
-                  <div className="text-center w-full">
-                    <p className="text-sm text-muted-foreground">Calculated Fuel Efficiency</p>
-                    <p className="text-3xl font-bold">
-                      {calculatedEfficiency.toFixed(2)}
-                      <span className="text-xl font-medium text-muted-foreground"> km/L</span>
-                    </p>
+              {calculatedEfficiency !== null && calculatedDistance !== null && (
+                 <div className="bg-muted/50 p-6 rounded-lg">
+                  <div className="flex justify-around text-center w-full items-center">
+                    <div>
+                      <p className="text-sm text-muted-foreground">Distance Traveled</p>
+                      <p className="text-3xl font-bold">
+                        {calculatedDistance.toFixed(1)}
+                        <span className="text-xl font-medium text-muted-foreground"> km</span>
+                      </p>
+                    </div>
+                    <div className="h-16 w-px bg-border mx-4" />
+                    <div>
+                      <p className="text-sm text-muted-foreground">Fuel Efficiency</p>
+                      <p className="text-3xl font-bold">
+                        {calculatedEfficiency.toFixed(2)}
+                        <span className="text-xl font-medium text-muted-foreground"> km/L</span>
+                      </p>
+                    </div>
                   </div>
                 </div>
               )}
