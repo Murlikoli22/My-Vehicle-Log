@@ -214,12 +214,6 @@ export function VehicleManagement({
     await deleteDocumentNonBlocking(documentRef);
   };
 
-  const handleRemoveMaintenanceRecord = async (recordId: string) => {
-    if (!user || !selectedVehicle) return;
-    const recordRef = doc(firestore, 'users', user.uid, 'vehicles', selectedVehicle.id, 'maintenanceLogs', recordId);
-    await deleteDocumentNonBlocking(recordRef);
-  };
-
   const handleAddBillToRecord = (e: React.ChangeEvent<HTMLInputElement>, recordId: string) => {
     const file = e.target.files?.[0];
     if (!file || !user || !selectedVehicle) return;
@@ -581,7 +575,6 @@ export function VehicleManagement({
                         <TableHead>Mechanic</TableHead>
                         <TableHead className="text-right">Cost</TableHead>
                         <TableHead>Bill</TableHead>
-                        <TableHead className="text-right">Actions</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -642,29 +635,6 @@ export function VehicleManagement({
                                 />
                               </>
                             )}
-                          </TableCell>
-                          <TableCell className="text-right">
-                            <AlertDialog>
-                              <AlertDialogTrigger asChild>
-                                <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive">
-                                  <Trash2 className="h-4 w-4" />
-                                </Button>
-                              </AlertDialogTrigger>
-                              <AlertDialogContent>
-                                <AlertDialogHeader>
-                                  <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-                                  <AlertDialogDescription>
-                                    This action cannot be undone. This will permanently delete this maintenance record.
-                                  </AlertDialogDescription>
-                                </AlertDialogHeader>
-                                <AlertDialogFooter>
-                                  <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                  <AlertDialogAction onClick={() => handleRemoveMaintenanceRecord(record.id)} className="bg-destructive hover:bg-destructive/90">
-                                    Delete
-                                  </AlertDialogAction>
-                                </AlertDialogFooter>
-                              </AlertDialogContent>
-                            </AlertDialog>
                           </TableCell>
                         </TableRow>
                       ))}
