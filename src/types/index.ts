@@ -7,7 +7,7 @@ export type Vehicle = {
   brand: string;
   model: string;
   year: number;
-  fuelType: 'Gasoline' | 'Diesel' | 'Electric' | 'Hybrid';
+  fuelType: 'Gasoline' | 'Diesel' | 'Electric' | 'Hybrid' | 'CNG';
   odometerReading: number;
   imageUrl: string;
   imageHint: string;
@@ -23,7 +23,7 @@ export type VehicleDocument = {
 };
 
 export type MaintenanceRecord = {
-  id: string;
+  id:string;
   vehicleId: string;
   date: string;
   odometerReading: number;
@@ -63,4 +63,41 @@ export type UserProfile = {
   };
 };
 
+export type FuelEntry = {
+  id: string;
+  vehicleId: string;
+  userId: string;
+  dateTime: string;
+  fuelQuantityLitres: number;
+  amountPaid: number;
+  fuelType: 'Gasoline' | 'Diesel' | 'CNG' | 'Electric';
+  odometerReading: number;
+  stationName?: string;
+  notes?: string;
+  // Calculated fields, added on the fly during processing
+  distanceTravelled?: number;
+  mileage?: number;
+  costPerKm?: number;
+};
 
+export type PeriodStats = {
+  totalLitres: number;
+  totalSpend: number;
+  totalDistance: number;
+  avgMileage: number;
+  avgCostPerKm: number;
+  entries: FuelEntry[];
+};
+
+export type FuelAnalyticsData = {
+  today: PeriodStats;
+  thisWeek: PeriodStats;
+  thisMonth: PeriodStats;
+  lastWeek: PeriodStats;
+  insights: {
+    bestMileageDay: FuelEntry | null;
+    worstMileageDay: FuelEntry | null;
+    weekOverWeekConsumptionTrend: number; // percentage change
+  };
+  monthlyChartData: { name: string; litres: number }[];
+};

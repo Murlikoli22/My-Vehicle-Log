@@ -1,3 +1,4 @@
+
 {
   "entities": {
     "Vehicle": {
@@ -225,6 +226,66 @@
         "email",
         "name"
       ]
+    },
+    "FuelEntry": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "FuelEntry",
+      "type": "object",
+      "description": "Represents a single fuel entry for a vehicle.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the fuel entry."
+        },
+        "userId": {
+          "type": "string",
+          "description": "ID of the user who owns the vehicle."
+        },
+        "vehicleId": {
+          "type": "string",
+          "description": "ID of the vehicle this entry belongs to."
+        },
+        "dateTime": {
+          "type": "string",
+          "description": "The date and time of the fuel entry.",
+          "format": "date-time"
+        },
+        "fuelQuantityLitres": {
+          "type": "number",
+          "description": "The amount of fuel added in litres."
+        },
+        "amountPaid": {
+          "type": "number",
+          "description": "The total amount paid for the fuel."
+        },
+        "fuelType": {
+          "type": "string",
+          "enum": ["Petrol", "Diesel", "CNG", "EV kWh"],
+          "description": "The type of fuel."
+        },
+        "odometerReading": {
+          "type": "number",
+          "description": "The vehicle's odometer reading at the time of refuelling."
+        },
+        "stationName": {
+          "type": "string",
+          "description": "Name of the fuel station (optional)."
+        },
+        "notes": {
+          "type": "string",
+          "description": "User notes or tags for the entry (optional)."
+        }
+      },
+      "required": [
+        "id",
+        "userId",
+        "vehicleId",
+        "dateTime",
+        "fuelQuantityLitres",
+        "amountPaid",
+        "fuelType",
+        "odometerReading"
+      ]
     }
   },
   "auth": {
@@ -318,8 +379,32 @@
             }
           ]
         }
+      },
+      {
+        "path": "/users/{userId}/vehicles/{vehicleId}/fuelEntries/{fuelEntryId}",
+        "definition": {
+          "entityName": "FuelEntry",
+          "schema": {
+            "$ref": "#/backend/entities/FuelEntry"
+          },
+          "description": "Stores fuel log entries for a specific vehicle owned by a user. Ownership is determined by the userId and vehicleId in the path.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The Firebase Auth UID of the user who owns the vehicle."
+            },
+            {
+              "name": "vehicleId",
+              "description": "The unique ID of the vehicle to which the fuel entry belongs."
+            },
+            {
+              "name": "fuelEntryId",
+              "description": "The unique ID of the fuel entry."
+            }
+          ]
+        }
       }
     ],
-    "reasoning": "The Firestore structure is designed to ensure authorization independence, clarity, and scalability. It leverages path-based ownership for user-specific data and denormalization to avoid complex security rules with `get()` calls.\n\n*   **/users/{userId}**: Stores user profiles, including nested objects for emergency and medical information for fast retrieval. Authorization is based on the `request.auth.uid` matching the `{userId}`.\n*   **/users/{userId}/vehicles/{vehicleId}**: Stores vehicle data owned by a specific user. The `userId` is embedded in the path, making ownership clear and enabling simple security rules.\n*   **/users/{userId}/vehicles/{vehicleId}/documents/{documentId}**: Stores documents related to a specific vehicle. The path includes both `userId` and `vehicleId`, ensuring that only the owner of the vehicle can access these documents.\n*   **/users/{userId}/vehicles/{vehicleId}/maintenanceLogs/{maintenanceLogId}**: Stores maintenance logs for a specific vehicle, following the same ownership pattern as documents.\n\n**Authorization Independence (CRITICAL):** The structure avoids `get()` calls in security rules by embedding ownership information within the document paths. This enables atomic operations and simplifies security rule logic.  For example, to create a new document for a vehicle, the rule only needs to check that `request.auth.uid == userId` from the path.  It does not need to `get()` the vehicle document to verify ownership.\n\nThis updated structure removes the separate `emergencyContacts` collection and nests that information within the `user` document itself. This is a deliberate denormalization strategy to ensure that in an emergency scenario, all of a user's critical information can be retrieved with a single document read, which is faster and more efficient."
+    "reasoning": "The Firestore structure is designed to ensure authorization independence, clarity, and scalability. It leverages path-based ownership for user-specific data and denormalization to avoid complex security rules with `get()` calls.\n\n*   **/users/{userId}**: Stores user profiles, including nested objects for emergency and medical information for fast retrieval. Authorization is based on the `request.auth.uid` matching the `{userId}`.\n*   **/users/{userId}/vehicles/{vehicleId}**: Stores vehicle data owned by a specific user. The `userId` is embedded in the path, making ownership clear and enabling simple security rules.\n*   **/users/{userId}/vehicles/{vehicleId}/documents/{documentId}**: Stores documents related to a specific vehicle. The path includes both `userId` and `vehicleId`, ensuring that only the owner of the vehicle can access these documents.\n*   **/users/{userId}/vehicles/{vehicleId}/maintenanceLogs/{maintenanceLogId}**: Stores maintenance logs for a specific vehicle, following the same ownership pattern as documents.\n*   **/users/{userId}/vehicles/{vehicleId}/fuelEntries/{fuelEntryId}**: Stores fuel logs for a specific vehicle, following the same ownership pattern as documents.\n\n**Authorization Independence (CRITICAL):** The structure avoids `get()` calls in security rules by embedding ownership information within the document paths. This enables atomic operations and simplifies security rule logic.  For example, to create a new document for a vehicle, the rule only needs to check that `request.auth.uid == userId` from the path.  It does not need to `get()` the vehicle document to verify ownership.\n\nThis updated structure removes the separate `emergencyContacts` collection and nests that information within the `user` document itself. This is a deliberate denormalization strategy to ensure that in an emergency scenario, all of a user's critical information can be retrieved with a single document read, which is faster and more efficient."
   }
 }

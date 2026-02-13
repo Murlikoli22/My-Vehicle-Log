@@ -1,3 +1,4 @@
+
 /**
  * This ruleset enforces a strict user-ownership model for a vehicle management application.
  * All user data is private and can only be accessed by the authenticated user who created it.
@@ -176,6 +177,21 @@ service cloud.firestore {
           allow list: if isOwner(userId);
           allow create: if isOwner(userId) && hasCorrectVehicleIdOnCreate(vehicleId);
           allow update: if isExistingOwner(userId) && isVehicleIdImmutable();
+          allow delete: if isExistingOwner(userId);
+        }
+
+        /**
+         * @description Controls access to fuel entries for a specific vehicle.
+         * @path /users/{userId}/vehicles/{vehicleId}/fuelEntries/{fuelEntryId}
+         * @allow (create) The vehicle owner can add a fuel entry for their vehicle.
+         * @deny (delete) A user cannot delete a fuel entry for a vehicle they do not own.
+         * @principle Inherits ownership from the parent path, ensuring only the vehicle owner can manage fuel entries.
+         */
+        match /fuelEntries/{fuelEntryId} {
+          allow get: if isOwner(userId);
+          allow list: if isOwner(userId);
+          allow create: if isOwner(userId) && hasCorrectOwnerIdOnCreate(userId) && request.resource.data.vehicleId == vehicleId;
+          allow update: if isExistingOwner(userId) && isUserIdImmutable() && isVehicleIdImmutable();
           allow delete: if isExistingOwner(userId);
         }
       }

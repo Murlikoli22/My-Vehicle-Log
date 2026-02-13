@@ -1,14 +1,15 @@
+
 'use client';
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { LayoutDashboard, Car, ShieldAlert, Calculator } from 'lucide-react';
+import { LayoutDashboard, Car, ShieldAlert, Fuel } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const navItems = [
   { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { href: '/vehicles', label: 'Vehicles', icon: Car },
-  { href: '/estimate-cost', label: 'Estimate', icon: Calculator },
+  { href: '/fuel', label: 'Fuel', icon: Fuel },
   { href: '/emergency', label: 'Emergency', icon: ShieldAlert },
 ];
 
