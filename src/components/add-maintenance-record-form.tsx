@@ -185,10 +185,11 @@ export function AddMaintenanceRecordForm({ onSubmit }: AddMaintenanceRecordFormP
           name="bill"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Upload Bill (Optional)</FormLabel>
+              <FormLabel>Upload Bill Photo (Optional)</FormLabel>
               <FormControl>
                 <Input 
-                  type="file" 
+                  type="file"
+                  accept="image/*"
                   onChange={(e) => field.onChange(e.target.files?.[0])}
                   className="pt-2 text-sm text-muted-foreground file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-primary/10 file:text-primary hover:file:bg-primary/20"
                 />

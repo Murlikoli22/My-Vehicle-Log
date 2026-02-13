@@ -220,6 +220,25 @@ export function VehicleManagement({
     await deleteDocumentNonBlocking(recordRef);
   };
 
+  const handleAddBillToRecord = (e: React.ChangeEvent<HTMLInputElement>, recordId: string) => {
+    const file = e.target.files?.[0];
+    if (!file || !user || !selectedVehicle) return;
+
+    const reader = new FileReader();
+    reader.readAsDataURL(file);
+    reader.onload = async () => {
+        const billUrl = reader.result as string;
+        if (!billUrl) return;
+
+        const recordRef = doc(firestore, 'users', user.uid, 'vehicles', selectedVehicle.id, 'maintenanceLogs', recordId);
+        await updateDocumentNonBlocking(recordRef, { billUrl });
+    };
+    reader.onerror = (error) => {
+        console.error("Error converting file to data URL for bill", error);
+    };
+    e.target.value = '';
+  };
+
   const handleView = (dataUrl?: string) => {
     if (!dataUrl) return;
 
@@ -565,18 +584,34 @@ export function VehicleManagement({
                           <TableCell>{record.mechanicDetails}</TableCell>
                           <TableCell className="text-right font-mono">{new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR' }).format(record.cost)}</TableCell>
                           <TableCell>
-                              {record.billUrl && (
-                                  <div className="flex items-center justify-start gap-1">
-                                      <Button variant="ghost" size="icon" onClick={() => handleView(record.billUrl)} title="View bill">
-                                          <Eye className="h-4 w-4" />
-                                      </Button>
-                                      <Button variant="ghost" size="icon" asChild>
-                                          <a href={record.billUrl} download={`Bill_${record.serviceType.replace(/\s/g, '_')}_${format(parseISO(record.date), "dd-MM-yyyy")}`} title="Download bill">
-                                              <Download className="h-4 w-4" />
-                                          </a>
-                                      </Button>
-                                  </div>
-                              )}
+                            {record.billUrl ? (
+                                <div className="flex items-center justify-start gap-1">
+                                    <Button variant="ghost" size="icon" onClick={() => handleView(record.billUrl)} title="View bill">
+                                        <Eye className="h-4 w-4" />
+                                    </Button>
+                                    <Button variant="ghost" size="icon" asChild>
+                                        <a href={record.billUrl} download={`Bill_${record.serviceType.replace(/\s/g, '_')}_${format(parseISO(record.date), "dd-MM-yyyy")}`} title="Download bill">
+                                            <Download className="h-4 w-4" />
+                                        </a>
+                                    </Button>
+                                </div>
+                            ) : (
+                              <>
+                                <Button asChild variant="outline" size="sm" className="h-8 px-2">
+                                  <label htmlFor={`bill-upload-${record.id}`} className="cursor-pointer flex items-center gap-1">
+                                    <PlusCircle className="h-3 w-3"/>
+                                    Add
+                                  </label>
+                                </Button>
+                                <input
+                                  id={`bill-upload-${record.id}`}
+                                  type="file"
+                                  accept="image/*"
+                                  className="hidden"
+                                  onChange={(e) => handleAddBillToRecord(e, record.id)}
+                                />
+                              </>
+                            )}
                           </TableCell>
                           <TableCell className="text-right">
                             <AlertDialog>
