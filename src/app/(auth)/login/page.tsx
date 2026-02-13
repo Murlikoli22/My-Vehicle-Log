@@ -4,9 +4,13 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Loader2 } from 'lucide-react';
-import { sendPasswordResetEmail } from 'firebase/auth';
+import {
+  sendPasswordResetEmail,
+  signInWithEmailAndPassword,
+  signInAnonymously,
+} from 'firebase/auth';
 
-import { useAuth, useUser, initiateEmailSignIn, initiateAnonymousSignIn } from '@/firebase';
+import { useAuth, useUser } from '@/firebase';
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -28,6 +32,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { AppLogo } from '@/components/app-logo';
 import { useToast } from '@/hooks/use-toast';
+import { cn } from '@/lib/utils';
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
@@ -48,23 +53,57 @@ export default function LoginPage() {
     }
   }, [user, router]);
 
-
   // If there is a user and they are not anonymous, we are about to redirect, so return null.
   if (user && !user.isAnonymous) {
     return null;
   }
 
-  const handleEmailLogin = (e: React.FormEvent<HTMLFormElement>) => {
+  const handleEmailLogin = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setIsLoading(true);
-    // Non-blocking, will be handled by onAuthStateChanged
-    initiateEmailSignIn(auth, email, password);
+    try {
+      await signInWithEmailAndPassword(auth, email, password);
+      // Success is handled by the onAuthStateChanged listener in useUser,
+      // which triggers the useEffect above to redirect.
+    } catch (error: any) {
+      console.error('Login Error:', error);
+      let description = 'An unexpected error occurred. Please try again.';
+      // Use 'auth/invalid-credential' for newer SDK versions
+      if (
+        error.code === 'auth/user-not-found' ||
+        error.code === 'auth/wrong-password' ||
+        error.code === 'auth/invalid-credential'
+      ) {
+        description = 'Invalid email or password. Please try again.';
+      }
+      toast({
+        variant: 'destructive',
+        title: 'Login Failed',
+        description,
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  const handleAnonymousSignIn = () => {
-    initiateAnonymousSignIn(auth);
+  const handleAnonymousSignIn = async () => {
+    setIsLoading(true);
+    try {
+      await signInAnonymously(auth);
+      // Success is handled by the onAuthStateChanged listener in useUser.
+      // Redirect to dashboard is handled by the useEffect.
+    } catch (error) {
+      console.error('Anonymous Sign In Error:', error);
+      toast({
+        variant: 'destructive',
+        title: 'Error',
+        description: 'Could not sign in anonymously. Please try again later.',
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
-  
+
   const handlePasswordReset = async () => {
     if (!resetEmail) {
       toast({
@@ -99,7 +138,6 @@ export default function LoginPage() {
     }
   };
 
-
   return (
     <Card className="w-full max-w-sm">
       <CardHeader className="text-center">
@@ -120,6 +158,7 @@ export default function LoginPage() {
               required
               value={email}
               onChange={(e) => setEmail(e.target.value)}
+              disabled={isLoading}
             />
           </div>
           <div className="grid gap-2">
@@ -130,40 +169,45 @@ export default function LoginPage() {
               required
               value={password}
               onChange={(e) => setPassword(e.target.value)}
+              disabled={isLoading}
             />
           </div>
 
           <div className="flex items-center justify-end text-sm -mt-2">
             <Dialog open={isResetDialogOpen} onOpenChange={setIsResetDialogOpen}>
-                <DialogTrigger asChild>
-                    <Button type="button" variant="link" className="p-0 h-auto font-normal">Forgot password?</Button>
-                </DialogTrigger>
-                <DialogContent>
-                    <DialogHeader>
-                        <DialogTitle>Reset Password</DialogTitle>
-                        <DialogDescription>
-                            Enter your email address and we&apos;ll send you a link to reset your password.
-                        </DialogDescription>
-                    </DialogHeader>
-                    <div className="grid gap-4 py-4">
-                        <div className="grid grid-cols-4 items-center gap-4">
-                            <Label htmlFor="reset-email" className="text-right">Email</Label>
-                            <Input
-                                id="reset-email"
-                                type="email"
-                                value={resetEmail}
-                                onChange={(e) => setResetEmail(e.target.value)}
-                                className="col-span-3"
-                                placeholder="you@example.com"
-                            />
-                        </div>
-                    </div>
-                    <DialogFooter>
-                        <Button type="button" onClick={handlePasswordReset} disabled={isLoading}>
-                            {isLoading ? <Loader2 className="animate-spin" /> : 'Send Reset Link'}
-                        </Button>
-                    </DialogFooter>
-                </DialogContent>
+              <DialogTrigger asChild>
+                <Button type="button" variant="link" className="p-0 h-auto font-normal" disabled={isLoading}>
+                  Forgot password?
+                </Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Reset Password</DialogTitle>
+                  <DialogDescription>
+                    Enter your email address and we&apos;ll send you a link to reset your password.
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="grid gap-4 py-4">
+                  <div className="grid grid-cols-4 items-center gap-4">
+                    <Label htmlFor="reset-email" className="text-right">
+                      Email
+                    </Label>
+                    <Input
+                      id="reset-email"
+                      type="email"
+                      value={resetEmail}
+                      onChange={(e) => setResetEmail(e.target.value)}
+                      className="col-span-3"
+                      placeholder="you@example.com"
+                    />
+                  </div>
+                </div>
+                <DialogFooter>
+                  <Button type="button" onClick={handlePasswordReset} disabled={isLoading}>
+                    {isLoading ? <Loader2 className="animate-spin" /> : 'Send Reset Link'}
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
             </Dialog>
           </div>
 
@@ -173,12 +217,13 @@ export default function LoginPage() {
         </form>
         <div className="mt-4 text-center text-sm">
           Don&apos;t have an account?{' '}
-          <Link href="/register" className="underline text-primary">
+          <Link href="/register" className={cn('underline text-primary', isLoading && 'pointer-events-none opacity-50')}>
             Sign up
           </Link>
         </div>
         <div className="mt-2 text-center text-sm">
-          <Button variant="link" className="text-muted-foreground" onClick={handleAnonymousSignIn} suppressHydrationWarning>
+          <Button variant="link" className="text-muted-foreground" onClick={handleAnonymousSignIn} disabled={isLoading} suppressHydrationWarning>
+            {isLoading ? <Loader2 className="animate-spin mr-2" /> : null}
             Continue without logging in
           </Button>
         </div>
