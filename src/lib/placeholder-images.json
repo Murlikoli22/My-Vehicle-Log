@@ -2,9 +2,15 @@
   "placeholderImages": [
     {
       "id": "hero-background",
-      "description": "A scenic road with a car driving on it at sunset",
-      "imageUrl": "https://images.unsplash.com/photo-1700692955799-c23fe7c85159?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw2fHxzY2VuaWMlMjByb2FkfGVufDB8fHx8MTc2ODIxMjA3N3ww&ixlib=rb-4.1.0&q=80&w=1080",
-      "imageHint": "scenic road"
+      "description": "A dark, winding road seen from the perspective of a car dashboard at night.",
+      "imageUrl": "https://images.unsplash.com/photo-1517524206127-48bbd363f357?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwyfHxjYXIlMjBkcml2aW5nJTIwcm9hZHxlbnwwfHx8fDE3MjE4MTQwNDV8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "car road"
+    },
+    {
+      "id": "dashboard-hero",
+      "description": "Close up of a modern car dashboard with speedometer glowing",
+      "imageUrl": "https://images.unsplash.com/photo-1617531322474-3231c23315c2?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwxMHx8Y2FyJTIwZGFzaGJvYXJkfGVufDB8fHx8MTcyMTgxNDEyM3ww&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "car dashboard"
     },
     {
       "id": "car-default",

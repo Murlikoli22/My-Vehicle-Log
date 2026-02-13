@@ -91,7 +91,6 @@ export function VehicleManagement({
   const [isAddDocOpen, setAddDocOpen] = useState(false);
   const [isAddMaintOpen, setAddMaintOpen] = useState(false);
   const [viewingFile, setViewingFile] = useState<{url: string, type: string} | null>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (initialVehicles.length > 0) {
@@ -253,10 +252,10 @@ export function VehicleManagement({
 
   return (
     <>
-      <div className="grid md:grid-cols-[280px_1fr] lg:grid-cols-[320px_1fr] gap-8">
+      <div className="grid md:grid-cols-[320px_1fr] gap-8">
         <div className="flex flex-col gap-4">
           <div className="flex items-center justify-between">
-              <h2 className="text-xl font-bold">My Vehicles</h2>
+              <h2 className="text-xl font-bold">My Garage</h2>
               <Dialog open={isAddVehicleOpen} onOpenChange={setAddVehicleOpen}>
                 <DialogTrigger asChild>
                   <Button size="sm">
@@ -275,71 +274,73 @@ export function VehicleManagement({
                 </DialogContent>
               </Dialog>
           </div>
-          <ScrollArea className="h-[calc(100vh-12rem)]">
-            <div className="flex flex-col gap-3 pr-4">
+          <ScrollArea className="h-[calc(100vh-12rem)] md:h-auto">
+            <div className="flex flex-col gap-3 md:pr-4">
               {initialVehicles.map((vehicle) => (
-                <div key={vehicle.id} className="group flex items-center gap-2 rounded-lg border pr-2 text-left transition-colors hover:bg-muted/50">
-                  <button
+                 <Card
+                    key={vehicle.id}
                     onClick={() => setSelectedVehicle(vehicle)}
                     className={cn(
-                      'flex-1 flex items-center gap-4 rounded-lg p-3 text-left transition-colors',
-                      selectedVehicle?.id === vehicle.id && 'bg-muted'
+                        "cursor-pointer transition-all hover:shadow-md",
+                        selectedVehicle?.id === vehicle.id ? "ring-2 ring-primary" : "hover:bg-muted/50"
                     )}
-                  >
-                    <div className="relative h-12 w-12 rounded-md overflow-hidden shrink-0">
-                      <Image
-                          src={vehicle.imageUrl}
-                          alt={`${vehicle.brand} ${vehicle.model}`}
-                          fill
-                          className="object-cover"
-                          data-ai-hint={vehicle.imageHint}
-                      />
-                    </div>
-                    <div className="flex-1 truncate">
-                      <p className="font-medium truncate">{vehicle.brand} {vehicle.model}</p>
-                      <p className="text-sm text-muted-foreground">{vehicle.registrationNumber}</p>
-                    </div>
-                  </button>
-                  <AlertDialog>
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon" className="shrink-0 h-8 w-8 opacity-50 group-hover:opacity-100">
-                          <MoreVertical className="h-4 w-4" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent>
-                        <AlertDialogTrigger asChild>
-                          <DropdownMenuItem className="text-destructive">
-                            <Trash2 className="mr-2 h-4 w-4" />
-                            Remove
-                          </DropdownMenuItem>
-                        </AlertDialogTrigger>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                    <AlertDialogContent>
-                      <AlertDialogHeader>
-                        <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-                        <AlertDialogDescription>
-                          This action cannot be undone. This will permanently delete the vehicle
-                          and all associated documents and maintenance records.
-                        </AlertDialogDescription>
-                      </AlertDialogHeader>
-                      <AlertDialogFooter>
-                        <AlertDialogCancel>Cancel</AlertDialogCancel>
-                        <AlertDialogAction onClick={() => handleRemoveVehicle(vehicle.id)} className="bg-destructive hover:bg-destructive/90">
-                          Delete
-                        </AlertDialogAction>
-                      </AlertDialogFooter>
-                    </AlertDialogContent>
-                  </AlertDialog>
-                </div>
+                >
+                    <CardContent className="p-3 flex items-center gap-4">
+                        <div className="relative h-16 w-16 rounded-md overflow-hidden shrink-0">
+                            <Image
+                                src={vehicle.imageUrl}
+                                alt={`${vehicle.brand} ${vehicle.model}`}
+                                fill
+                                className="object-cover"
+                                data-ai-hint={vehicle.imageHint}
+                            />
+                        </div>
+                        <div className="flex-1 truncate">
+                            <p className="font-semibold truncate">{vehicle.brand} {vehicle.model}</p>
+                            <p className="text-sm text-muted-foreground">{vehicle.registrationNumber}</p>
+                            <Badge variant="outline" className="mt-1">{vehicle.fuelType}</Badge>
+                        </div>
+                        <AlertDialog>
+                            <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                                <Button variant="ghost" size="icon" className="shrink-0 h-8 w-8">
+                                <MoreVertical className="h-4 w-4" />
+                                </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent>
+                                <AlertDialogTrigger asChild>
+                                <DropdownMenuItem className="text-destructive">
+                                    <Trash2 className="mr-2 h-4 w-4" />
+                                    Remove
+                                </DropdownMenuItem>
+                                </AlertDialogTrigger>
+                            </DropdownMenuContent>
+                            </DropdownMenu>
+                            <AlertDialogContent>
+                            <AlertDialogHeader>
+                                <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                This action cannot be undone. This will permanently delete the vehicle
+                                and all associated documents and maintenance records.
+                                </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                <AlertDialogAction onClick={() => handleRemoveVehicle(vehicle.id)} className="bg-destructive hover:bg-destructive/90">
+                                Delete
+                                </AlertDialogAction>
+                            </AlertDialogFooter>
+                            </AlertDialogContent>
+                        </AlertDialog>
+                    </CardContent>
+                </Card>
               ))}
             </div>
           </ScrollArea>
         </div>
 
         {selectedVehicle ? (
-          <Tabs defaultValue="details">
+          <Tabs defaultValue="details" className="md:block hidden">
             <div className="flex items-start justify-between gap-4">
               <div className="flex items-center gap-4">
                   <div className="relative h-20 w-20 rounded-lg overflow-hidden shrink-0 group/image">
@@ -599,7 +600,7 @@ export function VehicleManagement({
 
           </Tabs>
         ) : (
-          <Card className="flex flex-col items-center justify-center h-full text-center">
+          <Card className="hidden md:flex flex-col items-center justify-center h-full text-center">
             <CardHeader>
               <CardTitle>No Vehicle Selected</CardTitle>
               <CardDescription>Please select a vehicle from the list to see its details, or add a new one to get started.</CardDescription>

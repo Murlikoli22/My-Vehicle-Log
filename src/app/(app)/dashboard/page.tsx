@@ -6,13 +6,14 @@ import {
   Bell,
   Car,
   Wrench,
-  ArrowUpRight,
   Fuel,
+  PlusCircle,
+  Gauge,
 } from 'lucide-react';
-import { collection, query, onSnapshot, orderBy } from 'firebase/firestore';
+import { collection, query, onSnapshot, orderBy, limit } from 'firebase/firestore';
 import { format, parseISO } from 'date-fns';
 
-import { useUser, useFirestore, useCollection, useMemoFirebase } from '@/firebase';
+import { useUser, useFirestore, useCollection, useMemoFirebase, useDoc } from '@/firebase';
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -21,18 +22,9 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
-import type { Vehicle, Reminder, MaintenanceRecord, VehicleDocument } from '@/types';
-import { Badge } from '@/components/ui/badge';
+import type { Vehicle, Reminder, MaintenanceRecord, VehicleDocument, UserProfile } from '@/types';
 import { Skeleton } from '@/components/ui/skeleton';
-import { ScrollArea } from '@/components/ui/scroll-area';
+import { doc } from 'firebase/firestore';
 
 
 // Helper function to get reminder icon
@@ -50,277 +42,199 @@ export default function DashboardPage() {
     const { user, isUserLoading } = useUser();
     const firestore = useFirestore();
 
+    const userDocRef = useMemoFirebase(() => {
+        if (!user) return null;
+        return doc(firestore, 'users', user.uid);
+    }, [firestore, user]);
+    const { data: userProfile, isLoading: isProfileLoading } = useDoc<UserProfile>(userDocRef);
+
     const vehiclesQuery = useMemoFirebase(() => {
         if (!user) return null;
-        return query(collection(firestore, 'users', user.uid, 'vehicles'), orderBy('brand'));
+        return query(collection(firestore, 'users', user.uid, 'vehicles'), orderBy('brand'), limit(1));
     }, [firestore, user]);
-
     const { data: vehicles, isLoading: vehiclesLoading } = useCollection<Vehicle>(vehiclesQuery);
+    
+    const activeVehicle = vehicles?.[0];
 
-    const [documents, setDocuments] = useState<VehicleDocument[]>([]);
-    const [maintenanceRecords, setMaintenanceRecords] = useState<MaintenanceRecord[]>([]);
-    const [reminders, setReminders] = useState<Reminder[]>([]);
-    const [subCollectionsLoading, setSubCollectionsLoading] = useState(true);
+    const documentsQuery = useMemoFirebase(() => {
+        if (!user || !activeVehicle) return null;
+        return query(collection(firestore, 'users', user.uid, 'vehicles', activeVehicle.id, 'documents'));
+    }, [firestore, user, activeVehicle]);
+    const { data: documents, isLoading: documentsLoading } = useCollection<VehicleDocument>(documentsQuery);
 
-    useEffect(() => {
-        if (!vehicles || !user) {
-            if (!vehiclesLoading && !isUserLoading) {
-                setSubCollectionsLoading(false);
-            }
-            return;
-        };
+    const maintenanceQuery = useMemoFirebase(() => {
+        if (!user || !activeVehicle) return null;
+        return query(collection(firestore, 'users', user.uid, 'vehicles', activeVehicle.id, 'maintenanceLogs'), orderBy('date', 'desc'), limit(3));
+    }, [firestore, user, activeVehicle]);
+    const { data: maintenanceRecords, isLoading: maintenanceLoading } = useCollection<MaintenanceRecord>(maintenanceQuery);
 
-        setSubCollectionsLoading(true);
-        const unsubscribes: (() => void)[] = [];
-        let allDocuments: VehicleDocument[] = [];
-        let allMaintenance: MaintenanceRecord[] = [];
-
-        if (vehicles.length === 0) {
-            setSubCollectionsLoading(false);
-            return;
-        }
-
-        let pending = vehicles.length * 2;
-        const onSubLoad = () => {
-            pending--;
-            if(pending === 0) {
-                setSubCollectionsLoading(false);
-            }
-        }
-
-        for (const vehicle of vehicles) {
-            const docsRef = collection(firestore, 'users', user.uid, 'vehicles', vehicle.id, 'documents');
-            const docsUnsub = onSnapshot(docsRef, (snapshot) => {
-                const newDocs = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as VehicleDocument));
-                allDocuments = [...allDocuments.filter(d => d.vehicleId !== vehicle.id), ...newDocs];
-                setDocuments([...allDocuments]);
-                onSubLoad();
-            }, () => onSubLoad());
-            unsubscribes.push(docsUnsub);
-
-            const maintRef = collection(firestore, 'users', user.uid, 'vehicles', vehicle.id, 'maintenanceLogs');
-            const maintUnsub = onSnapshot(maintRef, (snapshot) => {
-                const newMaint = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as MaintenanceRecord));
-                allMaintenance = [...allMaintenance.filter(m => m.vehicleId !== vehicle.id), ...newMaint];
-                setMaintenanceRecords([...allMaintenance]);
-                onSubLoad();
-            }, () => onSubLoad());
-            unsubscribes.push(maintUnsub);
-        }
-
-        return () => {
-            unsubscribes.forEach(unsub => unsub());
-        };
-    }, [vehicles, user, firestore, vehiclesLoading, isUserLoading]);
-
-    useEffect(() => {
-        const newReminders: Reminder[] = [];
-        documents.forEach(doc => {
+    const reminders = (documents || [])
+        .map(doc => {
             if (doc.expiryDate) {
                 const expiry = new Date(doc.expiryDate);
                 const now = new Date();
                 const thirtyDaysFromNow = new Date();
                 thirtyDaysFromNow.setDate(now.getDate() + 30);
-
                 if (expiry > now && expiry <= thirtyDaysFromNow) {
-                    newReminders.push({
+                    return {
                         id: doc.id,
                         vehicleId: doc.vehicleId,
                         title: `${doc.documentType} Renewal`,
                         dueDate: doc.expiryDate,
                         type: doc.documentType.toLowerCase() as 'insurance' | 'puc' | 'service',
-                    });
+                    };
                 }
             }
-        });
-        setReminders(newReminders.sort((a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime()));
-    }, [documents]);
+            return null;
+        })
+        .filter((r): r is Reminder => r !== null)
+        .sort((a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime());
 
-    const totalMaintenanceCost = maintenanceRecords.reduce((sum, record) => sum + record.cost, 0);
-    const isLoading = isUserLoading || vehiclesLoading || subCollectionsLoading;
+
+    const isLoading = isUserLoading || isProfileLoading || vehiclesLoading;
+    const isSubDataLoading = documentsLoading || maintenanceLoading;
 
     if (isLoading) {
         return (
-             <div className="grid gap-4 md:gap-8 lg:grid-cols-2 xl:grid-cols-3">
-                <div className="grid gap-4 md:grid-cols-2 md:gap-8 lg:col-span-2">
-                    <Card>
-                        <CardHeader className="flex flex-row items-center justify-between pb-2">
-                            <CardTitle className="text-sm font-medium">Total Vehicles</CardTitle>
-                            <Car className="h-4 w-4 text-muted-foreground" />
-                        </CardHeader>
-                        <CardContent>
-                           <Skeleton className="h-8 w-1/4 mt-2" />
-                           <Skeleton className="h-4 w-3/4 mt-2" />
-                        </CardContent>
-                    </Card>
-                    <Card>
-                        <CardHeader className="flex flex-row items-center justify-between pb-2">
-                            <CardTitle className="text-sm font-medium">Total Maintenance Cost</CardTitle>
-                            <Wrench className="h-4 w-4 text-muted-foreground" />
-                        </CardHeader>
-                        <CardContent>
-                            <Skeleton className="h-8 w-1/2 mt-2" />
-                            <Skeleton className="h-4 w-1/2 mt-2" />
-                        </CardContent>
-                    </Card>
-                    <Card className="md:col-span-2">
-                      <CardHeader>
-                        <CardTitle>My Vehicles</CardTitle>
-                        <CardDescription>An overview of your registered vehicles.</CardDescription>
-                      </CardHeader>
-                      <CardContent className="grid gap-6">
-                        <div className="flex items-center gap-4">
-                            <Skeleton className="h-16 w-16 rounded-lg" />
-                            <div className="grid gap-2 flex-1">
-                                <Skeleton className="h-5 w-3/4" />
-                                <Skeleton className="h-4 w-1/2" />
-                            </div>
-                        </div>
-                         <div className="flex items-center gap-4">
-                            <Skeleton className="h-16 w-16 rounded-lg" />
-                            <div className="grid gap-2 flex-1">
-                                <Skeleton className="h-5 w-3/4" />
-                                <Skeleton className="h-4 w-1/2" />
-                            </div>
-                        </div>
-                      </CardContent>
-                    </Card>
-                </div>
-                 <Card className="xl:col-span-1">
-                    <CardHeader>
-                        <CardTitle>Upcoming Reminders</CardTitle>
-                        <CardDescription>Important dates for your vehicles.</CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                        <Skeleton className="h-32 w-full" />
-                    </CardContent>
-                </Card>
+            <div className="flex flex-col gap-6">
+                <Skeleton className="h-28 w-full" />
+                <Skeleton className="h-40 w-full" />
+                <Skeleton className="h-32 w-full" />
+                <Skeleton className="h-48 w-full" />
             </div>
         )
     }
 
-    return (
-        <div className="grid gap-4 md:gap-8 lg:grid-cols-2 xl:grid-cols-3">
-          <div className="grid gap-4 md:grid-cols-2 md:gap-8 lg:col-span-2">
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <CardTitle className="text-sm font-medium">Total Vehicles</CardTitle>
-                <Car className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{vehicles?.length ?? 0}</div>
-                <p className="text-xs text-muted-foreground">Managed in your account</p>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <CardTitle className="text-sm font-medium">Total Maintenance Cost</CardTitle>
-                <Wrench className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">
-                  {new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR' }).format(totalMaintenanceCost)}
-                </div>
-                <p className="text-xs text-muted-foreground">Across all your vehicles</p>
-              </CardContent>
-            </Card>
-            <Card className="md:col-span-2">
-              <CardHeader className="flex flex-row items-center">
-                 <div className="grid gap-2">
-                    <CardTitle>My Vehicles</CardTitle>
-                    <CardDescription>An overview of your registered vehicles.</CardDescription>
-                </div>
-                <Button asChild size="sm" className="ml-auto gap-1">
-                    <Link href="/vehicles">
-                        View All
-                        <ArrowUpRight className="h-4 w-4" />
-                    </Link>
-                </Button>
-              </CardHeader>
-              <CardContent className="grid gap-6">
-                {(vehicles ?? []).slice(0, 2).map((vehicle) => (
-                  <div key={vehicle.id} className="flex items-center gap-4">
-                    <div className="relative h-16 w-16 rounded-lg overflow-hidden">
-                        <Image
-                            src={vehicle.imageUrl}
-                            alt={`${vehicle.brand} ${vehicle.model}`}
-                            fill
-                            className="object-cover"
-                            data-ai-hint={vehicle.imageHint}
-                        />
-                    </div>
-                    <div className="grid gap-1">
-                      <p className="text-sm font-medium leading-none">
-                        {vehicle.brand} {vehicle.model} ({vehicle.year})
-                      </p>
-                      <p className="text-sm text-muted-foreground">{vehicle.registrationNumber}</p>
-                    </div>
-                    <div className="ml-auto font-medium text-right">
-                        <p className="text-sm">{vehicle.odometerReading.toLocaleString()} km</p>
-                        <Badge variant="outline" className="mt-1">{vehicle.fuelType}</Badge>
-                    </div>
-                  </div>
-                ))}
-                {vehicles?.length === 0 && (
-                    <div className="text-center text-muted-foreground py-8">
-                        <p>You haven't added any vehicles yet.</p>
-                        <Button asChild variant="link" className="mt-2">
-                            <Link href="/vehicles">Add one now</Link>
-                        </Button>
-                    </div>
-                )}
-              </CardContent>
-            </Card>
-          </div>
-    
-          <Card className="xl:col-span-1">
+    const WelcomeCard = () => (
+      <Card>
+        <CardHeader>
+          <CardTitle>Welcome back, {userProfile?.name?.split(' ')[0] || 'User'}!</CardTitle>
+          <CardDescription>Here's a quick overview of your vehicle.</CardDescription>
+        </CardHeader>
+      </Card>
+    );
+
+    const NoVehicleCard = () => (
+        <Card className="text-center">
             <CardHeader>
-              <CardTitle>Upcoming Reminders</CardTitle>
-              <CardDescription>Important dates for your vehicles approaching in the next 30 days.</CardDescription>
+                <CardTitle>No Vehicles Found</CardTitle>
+                <CardDescription>Get started by adding your first vehicle to your digital garage.</CardDescription>
             </CardHeader>
             <CardContent>
-              {reminders.length > 0 ? (
-                <ScrollArea className="h-72">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Vehicle</TableHead>
-                        <TableHead>Reminder</TableHead>
-                        <TableHead className="text-right">Due Date</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {reminders.map((reminder) => {
-                        const vehicle = vehicles?.find((v) => v.id === reminder.vehicleId);
-                        return (
-                          <TableRow key={reminder.id}>
-                            <TableCell>
-                              <div className="font-medium">{vehicle?.brand} {vehicle?.model}</div>
-                              <div className="hidden text-sm text-muted-foreground md:inline">
-                                {vehicle?.registrationNumber}
-                              </div>
-                            </TableCell>
-                            <TableCell>
-                                <div className="flex items-center gap-2">
-                                    {getReminderIcon(reminder.type)}
-                                    <span>{reminder.title}</span>
-                                </div>
-                            </TableCell>
-                            <TableCell className="text-right">{format(parseISO(reminder.dueDate), 'dd-MM-yyyy')}</TableCell>
-                          </TableRow>
-                        );
-                      })}
-                    </TableBody>
-                  </Table>
-                </ScrollArea>
-              ) : (
-                <div className="text-center text-muted-foreground p-8">
-                  <Bell className="mx-auto h-8 w-8 mb-2" />
-                  <p>No upcoming reminders.</p>
-                </div>
-              )}
+                <Car className="h-16 w-16 mx-auto text-muted-foreground" />
+                 <Button asChild className="mt-4">
+                    <Link href="/vehicles">
+                        <PlusCircle className="mr-2 h-4 w-4" />
+                        Add Vehicle
+                    </Link>
+                </Button>
             </CardContent>
-          </Card>
+        </Card>
+    );
+
+    return (
+        <div className="flex flex-col gap-6">
+            <WelcomeCard />
+
+            {!activeVehicle && !vehiclesLoading && <NoVehicleCard />}
+            
+            {activeVehicle && (
+                <>
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>Active Vehicle</CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                            <div className="flex items-center gap-4">
+                               <div className="relative h-16 w-16 rounded-lg overflow-hidden flex-shrink-0">
+                                    <Image
+                                        src={activeVehicle.imageUrl}
+                                        alt={`${activeVehicle.brand} ${activeVehicle.model}`}
+                                        fill
+                                        className="object-cover"
+                                        data-ai-hint={activeVehicle.imageHint}
+                                    />
+                                </div>
+                                <div>
+                                    <h3 className="font-semibold">{activeVehicle.brand} {activeVehicle.model}</h3>
+                                    <p className="text-sm text-muted-foreground">{activeVehicle.registrationNumber}</p>
+                                </div>
+                            </div>
+                            <div className="grid grid-cols-2 gap-4 mt-4 text-sm">
+                                <div className="flex items-center gap-2">
+                                    <Gauge className="h-4 w-4 text-muted-foreground" />
+                                    <span>{activeVehicle.odometerReading.toLocaleString()} km</span>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                    <Fuel className="h-4 w-4 text-muted-foreground" />
+                                    <span>{activeVehicle.fuelType}</span>
+                                </div>
+                            </div>
+                        </CardContent>
+                    </Card>
+
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>Upcoming Reminders</CardTitle>
+                             <CardDescription>Important dates approaching in the next 30 days.</CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                           {isSubDataLoading ? ( <Skeleton className="h-20 w-full" />) :
+                            reminders.length > 0 ? (
+                                <ul className="space-y-3">
+                                    {reminders.map(reminder => (
+                                        <li key={reminder.id} className="flex items-center justify-between text-sm">
+                                            <div className="flex items-center gap-2">
+                                                {getReminderIcon(reminder.type)}
+                                                <span>{reminder.title}</span>
+                                            </div>
+                                            <span className="font-medium">{format(parseISO(reminder.dueDate), 'dd MMM, yyyy')}</span>
+                                        </li>
+                                    ))}
+                                </ul>
+                            ) : (
+                                <div className="text-center text-muted-foreground py-4">
+                                    <Bell className="mx-auto h-8 w-8 mb-2" />
+                                    <p>No upcoming reminders.</p>
+                                </div>
+                            )}
+                        </CardContent>
+                    </Card>
+
+                    <Card>
+                         <CardHeader>
+                            <CardTitle>Recent Maintenance</CardTitle>
+                            <CardDescription>Latest service records for your {activeVehicle.brand}.</CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                            {isSubDataLoading ? (<Skeleton className="h-24 w-full" />) :
+                            maintenanceRecords && maintenanceRecords.length > 0 ? (
+                                <ul className="space-y-3">
+                                    {maintenanceRecords.map(record => (
+                                        <li key={record.id} className="flex items-center justify-between text-sm">
+                                            <div className="flex items-center gap-2">
+                                                <Wrench className="h-4 w-4 text-muted-foreground" />
+                                                <div>
+                                                    <p className="font-medium">{record.serviceType}</p>
+                                                    <p className="text-xs text-muted-foreground">{format(parseISO(record.date), 'dd MMM, yyyy')}</p>
+                                                </div>
+                                            </div>
+                                            <span className="font-mono text-sm">
+                                                {new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', minimumFractionDigits: 0 }).format(record.cost)}
+                                            </span>
+                                        </li>
+                                    ))}
+                                </ul>
+                            ) : (
+                                 <div className="text-center text-muted-foreground py-4">
+                                    <Wrench className="mx-auto h-8 w-8 mb-2" />
+                                    <p>No maintenance records yet.</p>
+                                </div>
+                            )}
+                        </CardContent>
+                    </Card>
+                </>
+            )}
         </div>
       );
 }
