@@ -20,6 +20,7 @@ const config = {
     extend: {
       fontFamily: {
         sans: ["var(--font-sans)", "sans-serif"],
+        'russo-one': ["var(--font-russo-one)", "sans-serif"],
       },
       colors: {
         border: "hsl(var(--border))",

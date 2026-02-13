@@ -1,5 +1,5 @@
 import type { Metadata } from 'next';
-import { Inter } from 'next/font/google';
+import { Inter, Russo_One } from 'next/font/google';
 import { cn } from '@/lib/utils';
 import { Toaster } from '@/components/ui/toaster';
 import { FirebaseClientProvider } from '@/firebase';
@@ -8,6 +8,11 @@ import './globals.css';
 import 'leaflet/dist/leaflet.css';
 
 const inter = Inter({ subsets: ['latin'], variable: '--font-sans' });
+const russo = Russo_One({
+  subsets: ['latin'],
+  weight: '400',
+  variable: '--font-russo-one',
+});
 
 export const metadata: Metadata = {
   title: 'MY Vehicle Log',
@@ -24,7 +29,7 @@ export default function RootLayout({
       <head>
         <link rel="manifest" href="/manifest.json" />
       </head>
-      <body className={cn('min-h-screen bg-background font-sans antialiased', inter.variable)}>
+      <body className={cn('min-h-screen bg-background font-sans antialiased', inter.variable, russo.variable)}>
         <ThemeProvider
             attribute="class"
             defaultTheme="system"

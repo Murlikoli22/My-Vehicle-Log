@@ -47,14 +47,20 @@ export function Header() {
   const displayInitial = displayName.charAt(0).toUpperCase();
 
   return (
-    <header className="sticky top-0 z-30 flex h-16 items-center gap-4 border-b bg-card px-4 md:px-6">
+    <header className="sticky top-0 z-30 flex h-16 items-center justify-between border-b bg-card px-4 md:px-6 relative">
       <div className="flex items-center gap-4">
         <Link href="/dashboard" className="flex items-center gap-2 font-semibold">
           <AppLogo />
         </Link>
       </div>
 
-      <div className="flex w-full items-center justify-end gap-2">
+      <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 hidden md:flex items-center pointer-events-none">
+        <h1 className="font-russo-one text-2xl italic -skew-x-12 tracking-wide text-foreground">
+          My Vehicle Log
+        </h1>
+      </div>
+
+      <div className="flex items-center gap-2">
         <Button asChild variant="ghost" size="icon" className="text-accent-foreground/80 hover:text-accent-foreground hover:bg-accent/10">
           <Link href="/emergency">
             <ShieldAlert className="h-5 w-5 text-accent" />
